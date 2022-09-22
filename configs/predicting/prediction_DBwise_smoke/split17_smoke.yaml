@@ -1,0 +1,3 @@
+# INITIAL SETTINGS
+test_file: PTB_PTBXL.csv
+model: split17_smoke.pth

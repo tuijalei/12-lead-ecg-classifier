@@ -1,0 +1,28 @@
+.ipynb_checkpoints
+
+__pycache__/
+**/__pycache__/
+**/.idea/
+
+# Ignore the whole Physionet2021 dataset and
+# its preprocessed version
+data/physionet_data/
+data/physionet_preprocessed/
+
+# Ignore the preprocessed smoke data too
+data/physionet_preprocessed_smoke/
+
+# Ignore the csv files
+data/split_csvs/
+
+# Ignore the tar.gz files of Physionet2021 data
+notebooks/*.tar.gz
+
+# Ignore the configuration yaml files of whole dataset
+configs/predicting/prediction_DBwise/
+configs/predicting/prediction_stratified/
+configs/training/train_stratified/
+configs/training/train_DBwise/
+
+# Ignore the experiments directory
+experiments/*

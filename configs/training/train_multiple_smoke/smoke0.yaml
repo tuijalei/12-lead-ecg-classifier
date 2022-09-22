@@ -1,0 +1,10 @@
+# INITIAL SETTINGS
+train_file: 'train_split1_0.csv'
+val_file: 'val_split1_0.csv'
+
+# TRAINING SETTINGS
+batch_size: 10
+num_workers: 0
+
+# SAVE, LOAD AND DISPLAY INFORMATION
+epochs: 1

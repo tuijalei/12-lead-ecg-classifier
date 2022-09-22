@@ -1,0 +1,3 @@
+# INITIAL SETTINGS
+test_file: CPSC_CPSC-Extra.csv
+model: split1_smoke.pth

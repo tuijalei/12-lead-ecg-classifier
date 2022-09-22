@@ -1,0 +1,10 @@
+# INITIAL SETTINGS
+train_file: train_split2_2.csv
+val_file: val_split2_2.csv
+
+# TRAINING SETTINGS
+batch_size: 64
+num_workers: 0
+
+# SAVE, LOAD AND DISPLAY INFORMATION
+epochs: 50

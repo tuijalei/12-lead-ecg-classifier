@@ -1,0 +1,28 @@
+# STRATIFIED OR DATABASE-WISE SPLIT
+stratified: False
+
+# INITIAL SETTINGS
+data_dir: './data/physionet_preprocessed/'
+save_dir: './data/split_csvs/'
+
+#########################################
+# FILENAMES
+# -----------------
+# A - CPSC
+# Q - CPSC-Extra
+# I - INCART
+# S - PTB
+# HR - PTB-XL
+# E - Georgia
+# JS - ChapmanShaoxing and Ningbo
+#########################################
+# DIRECTORIES USED FOR SPLIT
+# --------------------------
+# ChapmanShaoxing_Ningbo
+# CSPC_CSPC-Extra
+# Georgia
+# INCART
+# PTB_PTBXL
+#########################################
+# TRAIN: INCART, PTB and PTB-XL, Georgia, ChapmanShaoxing and Ningbo
+# TEST: CPSC and CPSC-Extra

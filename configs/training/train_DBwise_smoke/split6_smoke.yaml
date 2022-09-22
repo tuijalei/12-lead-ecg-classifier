@@ -1,0 +1,10 @@
+# INITIAL SETTINGS
+train_file: PTB_PTBXL_G12EC_CPSC_CPSC-Extra.csv
+val_file: INCART.csv
+
+# TRAINING SETTINGS
+batch_size: 10
+num_workers: 0
+
+# SAVE, LOAD AND DISPLAY INFORMATION
+epochs: 1
