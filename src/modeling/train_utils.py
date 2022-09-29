@@ -81,14 +81,14 @@ class Training(object):
         history = {}
         history['train_loss'] = []
         history['train_micro_auroc'] = []
-        history['train_micro_avg_auprc'] = []  
+        history['train_micro_avg_prec'] = []  
         history['train_macro_auroc'] = []
         history['train_macro_avg_prec'] = [] 
         
         
         history['val_loss'] = []
         history['val_micro_auroc'] = []
-        history['val_micro_avg_auprc'] = []
+        history['val_micro_avg_prec'] = []
         history['val_macro_auroc'] = []
         history['val_macro_avg_prec'] = []
         
@@ -200,13 +200,13 @@ class Training(object):
             # Add information for training history
             history['train_loss'].append(train_loss)
             history['train_micro_auroc'].append(train_micro_auroc)
-            history['train_micro_avg_auprc'].append(train_micro_avg_prec)
+            history['train_micro_avg_prec'].append(train_micro_avg_prec)
             history['train_macro_auroc'].append(train_macro_auroc)
             history['train_macro_avg_prec'].append(train_macro_avg_prec)
             
             history['val_loss'].append(val_loss)
             history['val_micro_auroc'].append(val_micro_auroc)
-            history['val_micro_avg_auprc'].append(val_micro_avg_prec)         
+            history['val_micro_avg_prec'].append(val_micro_avg_prec)         
             history['val_macro_auroc'].append(val_macro_auroc)  
             history['val_macro_avg_prec'].append(val_macro_avg_prec)  
             
