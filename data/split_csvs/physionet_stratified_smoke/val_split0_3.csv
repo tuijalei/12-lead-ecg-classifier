@@ -1,0 +1,12 @@
+path,age,gender,fs,426783006,426177001,164934002,427084000,164890007,39732003,164889003,59931005,427393009,270492004
+./data/physionet_preprocessed_smoke/G12EC/E00006_preprocessed.mat,65.0,Male,500.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0
+./data/physionet_preprocessed_smoke/G12EC/E00005_preprocessed.mat,83.0,Male,500.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0
+./data/physionet_preprocessed_smoke/G12EC/E00002_preprocessed.mat,-1.0,Female,500.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+./data/physionet_preprocessed_smoke/INCART/I0052_preprocessed.mat,56.0,Male,257.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0
+./data/physionet_preprocessed_smoke/INCART/I0050_preprocessed.mat,70.0,Male,257.0,0.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0
+./data/physionet_preprocessed_smoke/PTB_PTBXL/HR00002_preprocessed.mat,19.0,Male,500.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+./data/physionet_preprocessed_smoke/PTB_PTBXL/HR00008_preprocessed.mat,48.0,Male,500.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0
+./data/physionet_preprocessed_smoke/PTB_PTBXL/S0005_preprocessed.mat,63.0,Male,1000.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0
+./data/physionet_preprocessed_smoke/PTB_PTBXL/S0002_preprocessed.mat,81.0,Female,1000.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+./data/physionet_preprocessed_smoke/ChapmanShaoxing_Ningbo/JS00004_preprocessed.mat,66.0,Male,500.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+./data/physionet_preprocessed_smoke/ChapmanShaoxing_Ningbo/JS00005_preprocessed.mat,73.0,Female,500.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0
