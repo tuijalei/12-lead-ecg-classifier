@@ -26,7 +26,13 @@ Check out the notebook [Introductions for Data Handling](/notebooks/1_introducti
 
 # In a Nutshell
 
-First, consider checking the `configs` directory for yaml configurations:
+First, if you want to preprocess data, you can do it with the script `preprocess_data.py`. This is not mandatory for the use of the repository, but keep in mind that if some transforms (e.g. BandPassFilter) are used during the training phase, training might slow down significantly. To preprocess the data, use the following command
+
+```
+python preprocess_data.py
+```
+
+Consider checking the `configs` directory for yaml configurations:
 
 * Yaml files in the `data_splitting` directory are used to split the data into csv files for training and testing
 * Yaml files in the `training` directory are used to train a model
@@ -56,7 +62,7 @@ The main structure of csv files are as follows:
 2) To train a model, you'll need to use either a yaml file or a directory as an argument and use one of the following commands
 
 ```
-python train_model.py train_data_smoke.yaml
+python train_model.py train_smoke.yaml
 python train_model.py training_multiple_smoke
 ```
 
@@ -65,7 +71,7 @@ where `train_data.yaml` consists of needed arguments for the training in a yaml 
 3) To test and evaluate a trained model, you'll need the following command
 
 ```
-python run_model.py predictions_smoke.yaml
+python run_model.py prediction_smoke.yaml
 ```
 
 where `predictions_smoke.yaml` consists of needed arguments for the prediction phase. More detailed information about prediction and evaluation is available in the notebook [Introductions for Prediction and Evaluation](/notebooks/4_introductions_prediction_evaluation.ipynb).
