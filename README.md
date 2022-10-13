@@ -77,31 +77,12 @@ where `predictions_smoke.yaml` consists of needed arguments for the prediction p
 .
 ├── configs                      
 │   ├── data_splitting           # Yaml files considering a database-wise split and a stratified split   
-│   ├── training                 # Yaml files considering the training phase
-│   └── predicting               # Yaml files considering the prediction and evaluation phase
+│   ├── predicting               # Yaml files considering the prediction and evaluation phase
+│   └── training                 # Yaml files considering the training phase
 │   
 ├── data
-│   ├── physionet_data           # The Physionet Challenge 2021 data
-│   ├── physionet_data_smoke     # Sample of The Physionet Challenge 2021 data for testing
-│   └── split_csvs               # Splits of data, either database-wise or stratified
-│
-├── experiments                  # All the experiments saved
-│   ├── predictions_smoke          training: ROC curves, model and history
-│   │   ├──A0002.csv               prediction: predictions as csv files and history
-│   │   ├──A0003.csv
-│   │   ...
-│   ├── train_multiple_smoke
-│   │   ├── ROC_smoke0
-│   │   ├── ROC_smoke1
-│   │   ├── ROC_smoke2
-│   │   ├── smoke0.pth
-│   │   ├── smoke0_history.pickle
-│   │   ... 
-│   ├── train_smoke
-│   │   ├── ROC_train_smoke
-│   │   ├── train_smoke.pth
-│   │   └── train_smoke_history.pickle
-│   ... 
+│   ├── physionet_data_smoke     # Sample of The Physionet Challenge 2021 data for smoke testing
+│   └── split_csvs               # Csv files of ECGs, either database-wise or stratified splitted
 │
 ├── notebooks                    # Jupyter notebooks for data exploration and 
 │                                  information about the use of the repository
@@ -121,14 +102,17 @@ where `predictions_smoke.yaml` consists of needed arguments for the prediction p
 │       └── train_utils.py       # Setting up optimizer, loss, model, evaluation metrics
 │                                  and the training loop
 │
+├── .gitignore
 ├── LICENSE
 ├── LICENSE.txt
-├── prepare_data.py              # Script to perform Database-wise data split or 
+├── __init__.py
+├── prepare_data.py              # Script to perform database-wise data split or 
 │                                  split by the cross-validatior Multilabel Stratified ShuffleSplit 
+├── preprocess_data_data.py      # Script for preprocessing data
 ├── README.md
 ├── requirements.txt             # The requirements needed to run the repository
 ├── run_model.py                 # Script to test and evaluate a trained model
 ├── train_model.py               # Script to train a model
-└── utils                        # Script for yaml configuration
+└── utils.py                     # Script for yaml configuration
 
 ```
