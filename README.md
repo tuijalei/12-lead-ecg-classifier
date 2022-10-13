@@ -21,7 +21,7 @@ Recommended Python version 3.10.4 (tested with Python 3.10.4).
 
 # Data
 
-Check out the notebook [Introductions for Data Handling](/notebooks/introductions_data_handling.ipynb) in `/notebooks/` for further introductions for downloading and splitting the data.
+Check out the notebook [Introductions for Data Handling](/notebooks/1_introductions_data_handling.ipynb) in `/notebooks/` for further introductions for downloading and splitting the data.
 
 
 # In a Nutshell
@@ -32,7 +32,7 @@ First, consider checking the `configs` directory for yaml configurations:
 * Yaml files in the `training` directory are used to train a model
 * Yaml files in the `predicting` directory are used for predictions and evaluation
 
-Two notebooks are available for creating training and testing yaml files based on the data splitting performed with the script `prepare_data.py`: [Yaml files of Database-wise Split for Training and Prediction](/notebooks/physionet_DBwise_yaml_files.ipynb) and [Yaml files of Stratified Split for Training and Prediction](/notebooks/physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
+Two notebooks are available for creating training and testing yaml files based on the data splitting performed with the script `prepare_data.py`: [Yaml files of Database-wise Split for Training and Prediction](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of Stratified Split for Training and Prediction](/notebooks/2_physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
 
 1) To split the data for the model to use in training and testing, you'll need one of the following commands
 
@@ -60,7 +60,7 @@ python train_model.py train_data_smoke.yaml
 python train_model.py training_multiple_smoke
 ```
 
-where `train_data.yaml` consists of needed arguments for the training in a yaml format, and `training_multiple` is a directory where all the yaml files are located. Each yaml file is then loaded and run separately. More detailed information about training is available in the notebook [Introductions for Training a Model](/notebooks/introductions_training.ipynb).
+where `train_data.yaml` consists of needed arguments for the training in a yaml format, and `training_multiple` is a directory where all the yaml files are located. Each yaml file is then loaded and run separately. More detailed information about training is available in the notebook [Introductions for Training a Model](/notebooks/3_introductions_training.ipynb).
 
 3) To test and evaluate a trained model, you'll need the following command
 
@@ -68,7 +68,7 @@ where `train_data.yaml` consists of needed arguments for the training in a yaml 
 python run_model.py predictions_smoke.yaml
 ```
 
-where `predictions_smoke.yaml` consists of needed arguments for the prediction phase. More detailed information about prediction and evaluation is available in the notebook [Introductions for Prediction and Evaluation](/notebooks/introductions_prediction_evaluation.ipynb).
+where `predictions_smoke.yaml` consists of needed arguments for the prediction phase. More detailed information about prediction and evaluation is available in the notebook [Introductions for Prediction and Evaluation](/notebooks/4_introductions_prediction_evaluation.ipynb).
 
 
 # Repository in details
