@@ -7,11 +7,6 @@ import pandas as pd
 from utils import load_yaml
 from src.modeling.train_utils import Training
 
-#import vulture
-#v = vulture.Vulture()
-#v.scavenge(['.'])
-#v.report()
-
 def read_yaml(file, model_save_dir='', multiple=False):
     ''' Read a yaml file and perform training.
     
@@ -41,7 +36,7 @@ def read_yaml(file, model_save_dir='', multiple=False):
         args.roc_save_dir = os.path.join(os.getcwd(),'experiments', args.yaml_file_name, 'ROC_curves')
 
     # Parameters --------------------
-    args.device_count = 2
+    args.device_count = 1
     args.lr = 0.003
     args.weight_decay = 0.00001
     
@@ -106,8 +101,8 @@ if __name__ == '__main__':
     torch.backends.cudnn.deterministic =  True
     
     # Paths
-    csv_root = './data/split_csvs/physionet_stratified/'
-    data_root = './data/physionet_preprocessed/' 
+    csv_root = './data/split_csvs/physionet_stratified_smoke/'
+    data_root = './data/physionet_preprocessed_smoke/' 
 
     # Load args
     given_arg = sys.argv[1]

@@ -98,8 +98,8 @@ if __name__ == '__main__':
     torch.backends.cudnn.deterministic = True
 
     # Paths
-    csv_root = './data/split_csvs/physionet_DBwise/'
-    data_root = './data/physionet_preprocessed/'
+    csv_root = './data/split_csvs/physionet_stratified_smoke/'
+    data_root = './data/physionet_preprocessed_smoke/'
 
     # Load args
     given_arg = sys.argv[1]

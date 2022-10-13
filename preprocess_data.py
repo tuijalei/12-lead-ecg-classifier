@@ -23,10 +23,10 @@ Lastly, ECGs are saved. They need to be saved in mat format using dictionary wit
 '''
 
 # Original data location
-from_directory = os.path.join(os.getcwd(), 'data', 'physionet_data')
+from_directory = os.path.join(os.getcwd(), 'data', 'physionet_data_smoke')
 
 # New location for preprocessed data
-new_directory = os.path.join(os.getcwd(), 'data', 'physionet_preprocessed')
+new_directory = os.path.join(os.getcwd(), 'data', 'physionet_preprocessed_smoke')
 if not os.path.exists(new_directory):
     os.makedirs(new_directory)
 
