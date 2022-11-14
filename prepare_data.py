@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from utils import load_yaml
-from tqdm import tqdm
 
 def lsdir(data_dir, suffix):
     '''Reading files from a given directory
@@ -20,7 +19,7 @@ def lsdir(data_dir, suffix):
     file_list = []
     assert os.path.exists(data_dir)
     
-    for root, dirs, files in os.walk(data_dir):
+    for root, _, files in os.walk(data_dir):
        
         for file in files:
             if str(file).endswith(suffix):
@@ -147,7 +146,7 @@ def read_split_DB(data_directory, save_directory, labels):
     print('--Total of {} labels for the classification--'.format(len(labels)))
     
     # Iterating over databases for splits
-    for i, db in enumerate(db_names):
+    for db in db_names:
         
         # Path where to read the data from
         db_path = data_directory + db # './data/divided_sample/Georgia'

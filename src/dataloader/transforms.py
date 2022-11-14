@@ -42,7 +42,7 @@ class Resample(object):
         return mseq_rs
 
     
-class Resample2(object):
+class Linear_interpolation(object):
     def __init__(self, fs_new, fs_old):
         self.fs_new = fs_new
         self.fs_old = fs_old

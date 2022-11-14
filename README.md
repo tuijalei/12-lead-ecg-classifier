@@ -21,12 +21,12 @@ Recommended Python version 3.10.4 (tested with Python 3.10.4).
 
 # Data
 
-Check out the notebook [Introductions for Data Handling](/notebooks/1_introductions_data_handling.ipynb) in `/notebooks/` for further introductions for downloading and splitting the data.
+Check out the notebook [Introductions for Data Handling](/notebooks/1_introductions_data_handling.ipynb) in `/notebooks/` for further introductions for downloading, preprocessing and splitting the data.
 
 
 # In a Nutshell
 
-First, if you want to preprocess data, you can do it with the script `preprocess_data.py`. This is not mandatory for the use of the repository, but keep in mind that if some transforms (e.g. BandPassFilter) are used during the training phase, training might slow down significantly. To preprocess the data, use the following command
+If you want to preprocess data, you can do it with the script `preprocess_data.py`. This is not mandatory for the use of the repository, but keep in mind that if some transforms (e.g. BandPassFilter) are used during the training phase, training might slow down significantly. To preprocess the data, use the following command
 
 ```
 python preprocess_data.py
@@ -63,15 +63,16 @@ The main structure of csv files are as follows:
 
 ```
 python train_model.py train_smoke.yaml
-python train_model.py training_multiple_smoke
+python train_model.py train_multiple_smoke
 ```
 
-where `train_data.yaml` consists of needed arguments for the training in a yaml format, and `training_multiple` is a directory where all the yaml files are located. Each yaml file is then loaded and run separately. More detailed information about training is available in the notebook [Introductions for Training a Model](/notebooks/3_introductions_training.ipynb).
+where `train_data.yaml` consists of needed arguments for the training in a yaml format, and `train_multiple_smoke` is a directory where all the yaml files are located. Each yaml file is then loaded and run separately. More detailed information about training is available in the notebook [Introductions for Training a Model](/notebooks/3_introductions_training.ipynb).
 
-3) To test and evaluate a trained model, you'll need the following command
+3) To test and evaluate a trained model, you'll need one of the following commands
 
 ```
-python run_model.py prediction_smoke.yaml
+python test_model.py predict_smoke.yaml
+python test_model.py predict_multiple_smoke
 ```
 
 where `predictions_smoke.yaml` consists of needed arguments for the prediction phase. More detailed information about prediction and evaluation is available in the notebook [Introductions for Prediction and Evaluation](/notebooks/4_introductions_prediction_evaluation.ipynb).
@@ -117,7 +118,7 @@ where `predictions_smoke.yaml` consists of needed arguments for the prediction p
 ├── preprocess_data_data.py      # Script for preprocessing data
 ├── README.md
 ├── requirements.txt             # The requirements needed to run the repository
-├── run_model.py                 # Script to test and evaluate a trained model
+├── test_model.py                # Script to test and evaluate a trained model
 ├── train_model.py               # Script to train a model
 └── utils.py                     # Script for yaml configuration
 

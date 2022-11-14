@@ -1,6 +1,6 @@
-import os, sys
+import os
 import numpy as np
-from src.dataloader.transforms import Resample2, BandPassFilter
+from src.dataloader.transforms import Linear_interpolation, BandPassFilter
 from distutils.dir_util import copy_tree
 from scipy.io import loadmat, savemat
 
@@ -12,14 +12,20 @@ so we keep the original data as it is and we can use created directories for dat
 training and testing.
 
 Second, all the ECGs and header files are paired and loaded directory by directory. The header 
-files are needed for sample frequency since different frequencies in the dataset.
+files are needed for sample frequency as different frequencies are used in the data.
 
-Third, the preprocessing is performed. Transforms are loaded form /src/dataloader/transforms.
-    - Resample2 : resamples the ECG using linear interpolation
+Third, the preprocessing is performed. Transforms are loaded from /src/dataloader/transforms.
     - BandPassFilter: filters out certain frequencies that lie within a particular band or 
                       range of frequencies
+    - Linear_interpolation : resamples the ECG using linear interpolation
                       
 Lastly, ECGs are saved. They need to be saved in mat format using dictionary with the key 'val'!
+The original versions are deleted and only preprocessed ECGs are left in the new directory.
+
+You are welcome to change the attributes `from_directory` and `new_directory` as you wish.
+
+    from_directory      Where to load the original (not preprocessed) data
+    new_directory       Where to save the preprocessed data
 '''
 
 # Original data location
@@ -86,7 +92,7 @@ for dire in directories:
         ecg = bpf(ecg)             
        
         # - Linear interpolation
-        linear_interp = Resample2(fs_new = 250, fs_old = ecg_fs)
+        linear_interp = Linear_interpolation(fs_new = 250, fs_old = ecg_fs)
         ecg = linear_interp(ecg)
 
         # ------------------------------

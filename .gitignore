@@ -19,8 +19,8 @@ data/split_csvs/
 notebooks/*.tar.gz
 
 # Ignore the configuration yaml files of whole dataset
-configs/predicting/prediction_DBwise/
-configs/predicting/prediction_stratified/
+configs/predicting/predict_DBwise/
+configs/predicting/predict_stratified/
 configs/training/train_stratified/
 configs/training/train_DBwise/
 

@@ -139,7 +139,7 @@ def evaluate_predictions(test_data, pred_dir):
     print('Class labels found from the predictions: ', end='')
     print(', '.join(output_classes))
     
-    # Organize the labels and outputs
+    # Organize the labels and output
     classes, labels, pred_labels, prob_scores = organize_labels_outputs(label_classes, output_classes, labels, pred_labels, prob_score)
     
     print()

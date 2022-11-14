@@ -1,6 +1,6 @@
 # INITIAL SETTINGS
-train_file: PTB_PTBXL_G12EC_CPSC_CPSC-Extra.csv
-val_file: INCART.csv
+train_file: train_split0_1.csv
+val_file: val_split0_1.csv
 
 # TRAINING SETTINGS
 batch_size: 10
