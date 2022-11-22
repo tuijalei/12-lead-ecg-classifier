@@ -4,7 +4,6 @@ import random
 import pandas as pd
 from utils import load_yaml
 from src.modeling.predict_utils import Predicting
-from src.modeling.metrics import evaluate_predictions
 
 
 def read_yaml(file, model_save_dir='', multiple=False):
@@ -47,10 +46,12 @@ def read_yaml(file, model_save_dir='', multiple=False):
     args.seq_length = 4096
     args.normalizetype = 'none'
     # -------------------------------
-
+    # Threshold for predictions
+    args.threshold = 0.5
+    
     # Load labels
     args.labels = pd.read_csv(args.test_path, nrows=0).columns.tolist()[4:]
-
+    
     print('Arguments:\n' + '-'*10)
     for k, v in args.__dict__.items():
         print(k + ':', v)
@@ -59,12 +60,8 @@ def read_yaml(file, model_save_dir='', multiple=False):
     print('Making predictions...')
 
     pred = Predicting(args)
+    pred.setup()
     pred.predict()
-
-    print()
-    print('Evaluating predictions...')
-
-    evaluate_predictions(args.test_path, args.output_dir)
 
     
 def read_multiple_yamls(path):
@@ -105,7 +102,7 @@ if __name__ == '__main__':
     given_arg = sys.argv[1]
     print('Loading arguments from', given_arg)
     arg_path = os.path.join(os.getcwd(), 'configs', 'predicting', given_arg)
-
+    
     # Check if a yaml file or a directory given as an argument
     # Possible multiple yamls for prediction and evaluation phase!
     if os.path.exists(arg_path):

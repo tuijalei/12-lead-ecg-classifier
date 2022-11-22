@@ -85,27 +85,20 @@ class Training(object):
         history['train_macro_auroc'] = []
         history['train_macro_avg_prec'] = [] 
         
-        
         history['val_loss'] = []
         history['val_micro_auroc'] = []
         history['val_micro_avg_prec'] = []
         history['val_macro_auroc'] = []
         history['val_macro_avg_prec'] = []
         
-        history['labels'] = []
-        history['epochs'] = []
-        history['batch_size'] = []
-        history['lr'] = []
-        history['optimizer'] = []
-        history['criterion'] = []
-        
-        # Save the parameters of the training
-        history['labels'].append(self.args.labels)
-        history['epochs'].append(self.args.epochs)
-        history['batch_size'].append(self.args.batch_size)
-        history['lr'].append(self.args.lr)
-        history['optimizer'].append(self.optimizer)
-        history['criterion'].append(self.criterion) 
+        history['labels'] = self.args.labels
+        history['epochs'] = self.args.epochs
+        history['batch_size'] = self.args.batch_size
+        history['lr'] = self.args.lr
+        history['optimizer'] = self.optimizer
+        history['criterion'] = self.criterion
+        history['train_csv'] = self.args.train_path
+        history['val_csv'] = self.args.val_path
         
         start_time_sec = time.time()
         
@@ -228,7 +221,8 @@ class Training(object):
                 with open(history_savepath, mode='wb') as file:
                     pickle.dump(history, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-        
+            torch.cuda.empty_cache()
+         
         # END OF TRAINING LOOP        
         
         end_time_sec       = time.time()
