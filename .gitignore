@@ -12,9 +12,6 @@ data/physionet_preprocessed/
 # Ignore the preprocessed smoke data too
 data/physionet_preprocessed_smoke/
 
-# Ignore the csv files
-data/split_csvs/
-
 # Ignore the tar.gz files of Physionet2021 data
 notebooks/*.tar.gz
 

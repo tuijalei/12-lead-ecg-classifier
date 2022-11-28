@@ -1,6 +1,0 @@
-# STRATIFIED OR DATABASE-WISE SPLIT
-stratified: False
-
-# INITIAL SETTINGS
-data_dir: './data/physionet_data_smoke/'
-save_dir: './data/split_csvs/'

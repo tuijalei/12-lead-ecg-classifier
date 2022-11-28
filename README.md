@@ -21,7 +21,7 @@ Recommended Python version 3.10.4 (tested with Python 3.10.4).
 
 # Data
 
-Check out the notebook [Introductions for Data Handling](/notebooks/1_introductions_data_handling.ipynb) in `/notebooks/` for further introductions for downloading, preprocessing and splitting the data.
+Check out the notebook [Introduction for Data Handling](/notebooks/1_introduction_data_handling.ipynb) in `/notebooks/` for further introductions for downloading, preprocessing and splitting the data.
 
 
 # In a Nutshell
@@ -34,20 +34,18 @@ python preprocess_data.py
 
 Consider checking the `configs` directory for yaml configurations:
 
-* Yaml files in the `data_splitting` directory are used to split the data into csv files for training and testing
 * Yaml files in the `training` directory are used to train a model
 * Yaml files in the `predicting` directory are used for predictions and evaluation
 
-Two notebooks are available for creating training and testing yaml files based on the data splitting performed with the script `prepare_data.py`: [Yaml files of Database-wise Split for Training and Prediction](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of Stratified Split for Training and Prediction](/notebooks/2_physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
+Two notebooks are available for creating training and testing yaml files based on the data splitting performed with the script `create_data_split_csvs.py`: [Yaml files of Database-wise Split for Training and Prediction](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of Stratified Split for Training and Prediction](/notebooks/2_physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
 
-1) To split the data for the model to use in training and testing, you'll need one of the following commands
+1) To split the data for the model to use in training and testing, you'll need the following command
 
 ```
-python prepare_data.py physionet_stratified_smoke.yaml
-python prepare_data.py physionet_DBwise_smoke.yaml
+python create_data_split_csvs.py
 ```
 
-where `prepare_data.py` splits the data using either stratified split or database-wise split. On stratified run, `prepare_data.py` uses the implementation of `MultilabelStratifiedShuffleSplit` from `iterative-stratification` package. It makes csv files of the data splits which consists of a training set and a validation set. These csv files are later used in the training phase of the model and have the columns `path` (path for ECG recording in .mat format), `age` , `gender` and all the diagnoses in SNOMED CT codes used as labels in the classification. Csv files of test data are also created. Database-wise split uses the structure of the directory where the data is loaded.
+where `create_data_split_csvs.py` splits the data using either stratified split or database-wise split. On stratified run, `create_data_split_csvs.py` uses the implementation of `MultilabelStratifiedShuffleSplit` from `iterative-stratification` package. It makes csv files of the data splits which consists of a training set and a validation set. These csv files are later used in the training phase of the model, and have the columns `path` (path for ECG recording in .mat format), `age` , `gender` and all the diagnoses in SNOMED CT codes used as labels in the classification. Csv files of test data are also created. Database-wise split uses the structure of the directory where the data is loaded from.
 
 The main structure of csv files are as follows:
 
@@ -58,6 +56,8 @@ The main structure of csv files are as follows:
 | ./Data/A0003.mat | 81.0 | Female | 0 | 1 | 1 | ... |
 | ./Data/A0004.mat | 45.0 |  Male  | 1 | 0 | 0 | ... |
 | ... | ... |  ...  | ... | ... | ... | ... |
+
+Note! There are attributes to be considered *before* running the script. Check the notebook [Introduction for Data Handling](/notebooks/1_introduction_data_handling.ipynb) for further instructions. 
 
 2) To train a model, you'll need to use either a yaml file or a directory as an argument and use one of the following commands
 
@@ -113,7 +113,7 @@ where `predict_smoke.yaml` consists of needed arguments for the prediction phase
 ├── LICENSE
 ├── LICENSE.txt
 ├── __init__.py
-├── prepare_data.py              # Script to perform database-wise data split or 
+├── create_data_split_csvs.py    # Script to perform database-wise data split or 
 │                                  split by the cross-validatior Multilabel Stratified ShuffleSplit 
 ├── preprocess_data_data.py      # Script for preprocessing data
 ├── README.md

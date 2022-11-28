@@ -1,8 +1,7 @@
-import os, sys
+import os
 import numpy as np
 import pandas as pd
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
-from utils import load_yaml
 
 def lsdir(data_dir, suffix):
     '''Reading files from a given directory
@@ -17,7 +16,7 @@ def lsdir(data_dir, suffix):
     
     '''
     file_list = []
-    assert os.path.exists(data_dir)
+    assert os.path.exists(data_dir), 'Check the path for data directory'
     
     for root, _, files in os.walk(data_dir):
        
@@ -28,8 +27,8 @@ def lsdir(data_dir, suffix):
     return file_list
 
 
-def reading_headerfiles(CT_codes_all, files, class_df):
-    '''Updating an empty dataframe of files from a spesific source.
+def read_headerfiles(CT_codes_all, files, class_df):
+    '''Filling an empty dataframe with files from a spesific source.
     Adding only the files which contain the diagnosis used as labels.
     Dataframe will include columns of filename, age, gender, fs and
     SNOMED CT codes included in the classification task. 
@@ -125,7 +124,7 @@ def stratified_shuffle_split(df, labels, n_split):
     return train_list, val_list
 
 
-def read_split_DB(data_directory, save_directory, labels):
+def dbwise_csvs(data_directory, save_directory, labels):
     ''' Creating database-wise data splits and saving them in csv files
 
     :param data_directory: The location of the data files
@@ -148,28 +147,30 @@ def read_split_DB(data_directory, save_directory, labels):
     # Iterating over databases for splits
     for db in db_names:
         
-        # Path where to read the data from
-        db_path = data_directory + db # './data/divided_sample/Georgia'
+        # Absolute path where to read the data from
+        db_path = os.path.join(data_directory, db)
         
         # Getting files from the path
         file_names = lsdir(db_path, ".mat")
         
-        # Putting all the samples into a dataframe
+        # Putting all the ECGs into a dataframe: first, create an empty one
         columns_names = ['path', 'age', 'gender', 'fs'] + labels
         all_zeros = np.zeros((len(file_names), len(columns_names)))
         df_zeros = pd.DataFrame(all_zeros, columns=columns_names)
         
-        # Excluding patients with diagnoses which are not included as labels in the classification
-        df = reading_headerfiles(labels, file_names, df_zeros)
+        # Excluding patients with diagnoses which are not included as labels for classification
+        # Filling the empty dataframe
+        ecg_df = read_headerfiles(labels, file_names, df_zeros)
         
         # Saving database-wise splitted data into csvs
-        df.to_csv(os.path.join(save_directory, '%s.csv' % (db)), sep=',', index=False)
+        ecg_df.to_csv(os.path.join(save_directory, '%s.csv' % (db)), sep=',', index=False)
+        
         print('Created csv of the database {}!'.format(db))
-        print('- Total of {} rows (excluded {} files since no wanted labels in them)'.format(len(df), len(file_names)-len(df)))
+        print('- Total of {} rows (excluded {} files since no wanted labels in them)'.format(len(ecg_df), len(file_names)-len(ecg_df)))
         print('-'*20)
 
         
-def read_split_stratified(data_directory, save_directory, labels, train_val_splits):
+def stratified_csvs(data_directory, save_directory, labels, train_test_splits):
     ''' Creating stratified data splits and saving them in csvs
 
     :param data_directory: The location of the data files
@@ -183,96 +184,144 @@ def read_split_stratified(data_directory, save_directory, labels, train_val_spli
     '''
     
     # Preparing the directory to save the csv files to
-    save_dir = save_directory
-    if not os.path.exists(save_dir):
+    if not os.path.exists(save_directory):
         os.makedirs(save_dir) 
         
     print('--Total of {} labels for the classification--'.format(len(labels)))
-    # All wanted splits to make
-    stratified_splits = train_test_splits
     
-    # Since maybe many splits in the directory at the same time!!
-    n_all_splits = 0
-    
-    for i, data in enumerate(stratified_splits):
+    # Iterate over training and validation splits
+    for split, data in train_test_splits.items():
         
-        train_split = data.train
-        n_split = len(train_split)
+        # Get databases used for training data
+        train_data = data['train']
+
+        # Number of databases used for training data
+        n_split = len(train_data)
         
-        # All relative paths for different training data
-        train_paths = [data_directory + db for db in train_split]
+        # All relative paths for different training data(bases)
+        train_paths = [os.path.join(data_directory, db) for db in train_data]
 
         # All the training files
         train_files = [lsdir(db_path, ".mat") for db_path in train_paths]
         train_files = [one_file for files in train_files for one_file in files]
 
-        # Putting all the samples into a dataframe
+        # Putting all the ECGs into a dataframe: first, create an empty one
         columns_names = ['path', 'age', 'gender', 'fs'] + labels
         all_zeros = np.zeros((len(train_files), len(columns_names)))
         df_zeros = pd.DataFrame(all_zeros, columns=columns_names)
         
-        # Excluding patients with diagnoses which are not included as labels in the classification
-        train_df = reading_headerfiles(labels, train_files, df_zeros)
+        # Excluding patients with diagnoses which are not included as labels for classification
+        # Filling the empty dataframe
+        ecg_df = read_headerfiles(labels, train_files, df_zeros)
         
-        # Training labels - the last columns of the dataframe ()
-        train_labels = train_df.loc[:, (train_df.sum(axis=0) != 0)].iloc[:, 4:].values
+        # Training labels - the last columns of the dataframe
+        train_labels = ecg_df.loc[:, (ecg_df.sum(axis=0) != 0)].iloc[:, 4:].values
         
         # Stratifying the data
-        train_tmp, val_tmp = stratified_shuffle_split(train_df, train_labels, n_split)
+        train_sets, val_sets = stratified_shuffle_split(ecg_df, train_labels, n_split)
         
-        # Saving the stratified splits to .csvs
+        # Saving the stratified training and validation splits to csv files
         for i in range(n_split):
-            train_tmp[i].to_csv(os.path.join(save_directory, '%s.csv' % ('train_split' + str(n_all_splits) + '_' + str(i))), sep=',', index=False)
-            val_tmp[i].to_csv(os.path.join(save_directory, '%s.csv' % ('val_split' + str(n_all_splits) + '_' + str(i))), sep=',', index=False)
-        
-            if i == 0: # Need the test data for the stratified data
-                test_data = data.test
-                test_path = data_directory + test_data
+            train_sets[i].to_csv(os.path.join(save_directory, '%s.csv' % ('train_' + split + '_' + str(i+1))), sep=',', index=False)
+            val_sets[i].to_csv(os.path.join(save_directory, '%s.csv' % ('val_' + split + '_' + str(i+1))), sep=',', index=False)
+
+            if i == 0: # Save the test data only once
+                # 
+                test_data = data['test']
+                test_path = os.path.join(data_directory, test_data)
                 
                 # Getting every test data file
                 test_files = lsdir(test_path, ".mat")
+                
                 # Putting all the samples into a dataframe
                 columns_names = ['path', 'age', 'gender', 'fs'] + labels
                 all_zeros = np.zeros((len(test_files), len(columns_names)))
                 df_zeros = pd.DataFrame(all_zeros, columns=columns_names)
+                
                 # Excluding diagnoses which are not included as labels in the classification
-                test_df = reading_headerfiles(labels, test_files, df_zeros)
-                test_df.to_csv(os.path.join(save_directory, '%s.csv' % ('test_split' + str(n_all_splits))), sep=',', index=False)
-        
-        n_all_splits += 1
+                # Filling the empty dataframe
+                test_set = read_headerfiles(labels, test_files, df_zeros)
+                test_set.to_csv(os.path.join(save_directory, '%s.csv' % ('test_' + split)), sep=',', index=False)
         
         print('Created csv files for train-val-test split!')
-        print('Training data was from the databases {}'.format(train_split))
-        print('- Length of the first train_split is {}'.format(len(train_tmp[0])))
-        print('- Length of the first val_split is {}'.format(len(val_tmp[0])))
-        print('- {} rows excluded since no wanted labels in them'.format(len(train_files) - len(train_df)))
+        print('Training data was from the databases {}'.format(train_data))
+        print('- Length of the first train_split is {}'.format(len(train_sets[0])))
+        print('- Length of the first val_split is {}'.format(len(val_sets[0])))
+        print('- {} rows excluded since no wanted labels in them'.format(len(train_files) - len(ecg_df)))
         print('Testing data was from the database {}'.format(test_data))
-        print('- Length of the test_split is {}'.format(len(test_df)))
-        print('- {} rows excluded since no wanted labels in them'.format(len(test_files) - len(test_df)))
+        print('- Length of the test_split is {}'.format(len(test_set)))
+        print('- {} rows excluded since no wanted labels in them'.format(len(test_files) - len(test_set)))
         print('-'*20)
-        
-           
-if __name__ == '__main__':
-   
-    # Parsing arguments
-    if len(sys.argv) != 2:
-        raise Exception('Include a yaml file as an argument, e.g., python prepare_data.py data.yaml')
 
-    # Loading configurations from a yaml file
-    yaml_file = sys.argv[1]
-    yaml_filepath = os.path.join(os.getcwd(), 'configs', 'data_splitting', yaml_file)
-    args = load_yaml(yaml_filepath)
-    data_directory = args.data_dir
-    save_directory = os.path.join(args.save_dir, yaml_file.split(".")[0]) 
-    
-    # Labels
+
+if __name__ == '__main__':
+
+    # ----- WHICH DATA SPLIT DO YOU WANT TO USE WHEN CREATING CSV FILES?
+    # Stratified split :: stratified = True
+    # Database-wise split :: stratified = False
+    stratified = True
+
+    # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 
     labels = ['426783006', '426177001', '164934002', '427084000', '164890007', '39732003', '164889003', '59931005', '427393009', '270492004']
 
-    # Making either a stratified or a database-wise split
-    if args.stratified:
-        train_test_splits = args.splits
-        read_split_stratified(data_directory, save_directory, labels, train_test_splits)
+    
+    # ----- DATABASE-WISE DATA SPLIT
+    if not stratified:
+
+        # Data directory from where to read data for csvs
+        data_dir =  os.path.join(os.getcwd(), 'data', 'physionet_preprocessed_smoke')
+        
+        # Directory to save created csv files
+        save_dir =  os.path.join(os.getcwd(), 'data', 'split_csvs', 'physionet_DBwise_smoke')
+
+        dbwise_csvs(data_dir, save_dir, labels)
+    
+
+    # ----- STRATIFIED DATA SPLIT
     else:
-        read_split_DB(data_directory, save_directory, labels)
-            
+
+        # Data directory from where to read data for csvs
+        data_dir =  os.path.join(os.getcwd(), 'data', 'physionet_preprocessed_smoke')
+        
+        # Directory to save created csv files
+        save_dir =  os.path.join(os.getcwd(), 'data', 'split_csvs', 'physionet_stratified_smoke')
+
+        # Splits to divide the data into when making a stratified split
+        # The other splits are represented later in comments
+        train_test_splits = {
+            'split_1': {    
+                'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
+                'test': 'CPSC_CPSC-Extra'
+            },
+        }
+
+        # Make csv files using startified data split
+        stratified_csvs(data_dir, save_dir, labels, train_test_splits)
+
+        # ----------------------------------------
+        # Different train-test splits for the Physionet Challenge 2020 data:
+        # (you can use these by just adding them to the 'splits' dictionary)
+        # ----------------------------------------
+        #'split_1': {    
+        #        'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
+        #        'test': 'CPSC_CPSC-Extra'
+        #    },
+        # 'split_2': {    
+        #        'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra'],
+        #        'test': 'ChapmanShaoxing_Ningbo'
+        #    },
+        # 'split_3': {    
+        #        'train': train: ['G12EC', 'INCART', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+        #        'test': 'PTB_PTBXL'
+        #    },
+        # 'split_4': {    
+        #        'train': ['G12EC', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+        #        'test': 'INCART'
+        #    },
+        # 'split_5': {    
+        #        'train': ['INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+        #        'test': 'G12EC'
+        #    },
+        # ----------------------------------------
+
     print("Done.")
