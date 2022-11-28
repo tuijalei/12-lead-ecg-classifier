@@ -63,7 +63,7 @@ Note! There are attributes to be considered *before* running the script. Check t
 
 ```
 python train_model.py train_smoke.yaml
-python train_model.py train_multiple_smoke
+python train_model.py train_stratified_smoke
 ```
 
 where `train_data.yaml` consists of needed arguments for the training in a yaml format, and `train_multiple_smoke` is a directory containing several yaml files. When using multiple yaml files at the same time, each yaml file is loaded and run separately. More detailed information about training is available in the notebook [Introductions for Training a Model](/notebooks/3_introductions_training.ipynb).
@@ -72,7 +72,7 @@ where `train_data.yaml` consists of needed arguments for the training in a yaml 
 
 ```
 python test_model.py predict_smoke.yaml
-python test_model.py predict_multiple_smoke
+python test_model.py predict_stratified_smoke
 ```
 
 where `predict_smoke.yaml` consists of needed arguments for the prediction phase in a yaml format, and `predict_multiple_smoke` is a directory containing several yaml files. When using multiple yaml files at the same time, each yaml file is loaded and run separately. More detailed information about prediction and evaluation is available in the notebook [Introductions for Prediction and Evaluation](/notebooks/4_introductions_prediction_evaluation.ipynb).
