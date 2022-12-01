@@ -1,6 +1,6 @@
 # INITIAL SETTINGS
-train_file: 'train_split0_0.csv'
-val_file: 'val_split0_0.csv'
+train_file: 'train_split_1_1.csv'
+val_file: 'val_split_1_1.csv'
 
 # TRAINING SETTINGS
 batch_size: 10

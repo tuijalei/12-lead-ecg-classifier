@@ -135,7 +135,7 @@ def dbwise_csvs(data_directory, save_directory, labels):
     :type labels: list
     '''
 
-    # Preparing the directory to save the csv files to
+    # Preparing the directory where to save the csv files
     if not os.path.exists(save_directory):
         os.makedirs(save_directory)
     
@@ -183,7 +183,7 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits):
     :type train_val_splits: dict
     '''
     
-    # Preparing the directory to save the csv files to
+    # Preparing the directory where to save the csv files
     if not os.path.exists(save_directory):
         os.makedirs(save_dir) 
         
@@ -226,7 +226,6 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits):
             val_sets[i].to_csv(os.path.join(save_directory, '%s.csv' % ('val_' + split + '_' + str(i+1))), sep=',', index=False)
 
             if i == 0: # Save the test data only once
-                # 
                 test_data = data['test']
                 test_path = os.path.join(data_directory, test_data)
                 
@@ -257,8 +256,9 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits):
 if __name__ == '__main__':
 
     # ----- WHICH DATA SPLIT DO YOU WANT TO USE WHEN CREATING CSV FILES?
-    # Stratified split :: stratified = True
-    # Database-wise split :: stratified = False
+    # Database-wise split :: stratified = True
+    # Stratified split :: stratified = False
+    
     stratified = True
 
     # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 

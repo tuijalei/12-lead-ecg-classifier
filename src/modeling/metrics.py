@@ -28,7 +28,8 @@ def cal_multilabel_metrics(y_true, y_pred):
     
     try:
         macro_auroc = roc_auc_score(y_true, y_pred, average = 'macro')
-    except:
+    except Exception as e:
+        print('{} Macro AUROC set to 0.0'.format(e))
         macro_auroc = 0.0
 
     return macro_avg_prec, micro_avg_prec, macro_auroc, micro_auroc
