@@ -166,7 +166,7 @@ def dbwise_csvs(data_directory, save_directory, labels):
         ecg_df.to_csv(os.path.join(save_directory, '%s.csv' % (db)), sep=',', index=False)
         
         print('Created csv of the database {}!'.format(db))
-        print('- Total of {} rows (excluded {} files since no wanted labels in them)'.format(len(ecg_df), len(file_names)-len(ecg_df)))
+        print('- Total of {} rows (excluded {} files as no wanted labels in them)'.format(len(ecg_df), len(file_names)-len(ecg_df)))
         print('-'*20)
 
         
@@ -185,7 +185,7 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits):
     
     # Preparing the directory where to save the csv files
     if not os.path.exists(save_directory):
-        os.makedirs(save_dir) 
+        os.makedirs(save_directory) 
         
     print('--Total of {} labels for the classification--'.format(len(labels)))
     
@@ -246,45 +246,59 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits):
         print('Training data was from the databases {}'.format(train_data))
         print('- Length of the first train_split is {}'.format(len(train_sets[0])))
         print('- Length of the first val_split is {}'.format(len(val_sets[0])))
-        print('- {} rows excluded since no wanted labels in them'.format(len(train_files) - len(ecg_df)))
+        print('- {} rows excluded as no wanted labels in them'.format(len(train_files) - len(ecg_df)))
         print('Testing data was from the database {}'.format(test_data))
         print('- Length of the test_split is {}'.format(len(test_set)))
-        print('- {} rows excluded since no wanted labels in them'.format(len(test_files) - len(test_set)))
+        print('- {} rows excluded as no wanted labels in them'.format(len(test_files) - len(test_set)))
         print('-'*20)
 
 
 if __name__ == '__main__':
+    ''' The scipt to create csv files for training and testing.
+    Note that with this script, you make the decision about the labels
+    which you want to use in classification.
+    
+    Consider the following parameters:
+    ------------------------------------------
+    
+        :param stratified: perform either a database-wise or a stratified data split
+        :type stratified: boolean
+        :param data_dir: where to load the ecgs and header files from
+        :type data_dir: str
+        :param csv_dir: where to save the 
+        :type csv_dir: str
+        :param labels: wanted labels to include in classification, must be in SNOMED CT Codes
+        :type labels: list
+
+        
+    '''
 
     # ----- WHICH DATA SPLIT DO YOU WANT TO USE WHEN CREATING CSV FILES?
-    # Database-wise split :: stratified = True
-    # Stratified split :: stratified = False
+    # Database-wise split :: stratified = False
+    # Stratified split :: stratified = True
+    stratified = False
     
-    stratified = True
+    # ----- WHERE TO LOAD THE ECGS FROM - give the name of the data directory
+    # Note that the root for this is the data dictionary
+    data_dir = 'physionet_preprocessed_smoke'
+    
+    # ----- WHERE TO SAVE THE CSV FILES - give a name for the new directory
+    # Note that the root for this is the data/split_csv/ directory
+    csv_dir = 'physionet_DBwise_smoke'
 
     # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 
     labels = ['426783006', '426177001', '164934002', '427084000', '164890007', '39732003', '164889003', '59931005', '427393009', '270492004']
-
+   
     
-    # ----- DATABASE-WISE DATA SPLIT
-    if not stratified:
-
-        # Data directory from where to read data for csvs
-        data_dir =  os.path.join(os.getcwd(), 'data', 'physionet_preprocessed_smoke')
-        
-        # Directory to save created csv files
-        save_dir =  os.path.join(os.getcwd(), 'data', 'split_csvs', 'physionet_DBwise_smoke')
-
-        dbwise_csvs(data_dir, save_dir, labels)
-    
-
+    # -----------------------------------------------------------------------
     # ----- STRATIFIED DATA SPLIT
-    else:
-
-        # Data directory from where to read data for csvs
-        data_dir =  os.path.join(os.getcwd(), 'data', 'physionet_preprocessed_smoke')
+    if stratified:
+        
+         # Data directory from where to read data for csvs
+        data_dir =  os.path.join(os.getcwd(), 'data', data_dir)
         
         # Directory to save created csv files
-        save_dir =  os.path.join(os.getcwd(), 'data', 'split_csvs', 'physionet_stratified_smoke')
+        csv_dir =  os.path.join(os.getcwd(), 'data', 'split_csvs', csv_dir)
 
         # Splits to divide the data into when making a stratified split
         # The other splits are represented later in comments
@@ -295,33 +309,46 @@ if __name__ == '__main__':
             },
         }
 
-        # Make csv files using startified data split
-        stratified_csvs(data_dir, save_dir, labels, train_test_splits)
+        # Perform stratified data split
+        stratified_csvs(data_dir, csv_dir, labels, train_test_splits)
+    
+    # ----- DATABASE-WISE DATA SPLIT
+    else:
+        
+        # Data directory from where to read data for csvs
+        data_dir =  os.path.join(os.getcwd(), 'data', data_dir)
+        
+        # Directory to save created csv files
+        csv_dir =  os.path.join(os.getcwd(), 'data', 'split_csvs', csv_dir)
 
-        # ----------------------------------------
-        # Different train-test splits for the Physionet Challenge 2020 data:
-        # (you can use these by just adding them to the 'splits' dictionary)
-        # ----------------------------------------
-        #'split_1': {    
-        #        'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
-        #        'test': 'CPSC_CPSC-Extra'
-        #    },
-        # 'split_2': {    
-        #        'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra'],
-        #        'test': 'ChapmanShaoxing_Ningbo'
-        #    },
-        # 'split_3': {    
-        #        'train': train: ['G12EC', 'INCART', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-        #        'test': 'PTB_PTBXL'
-        #    },
-        # 'split_4': {    
-        #        'train': ['G12EC', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-        #        'test': 'INCART'
-        #    },
-        # 'split_5': {    
-        #        'train': ['INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-        #        'test': 'G12EC'
-        #    },
-        # ----------------------------------------
+        # Perform database-wise data split
+        dbwise_csvs(data_dir, csv_dir, labels)
+    # -----------------------------------------------------------------------
 
     print("Done.")
+    
+    # ----------------------------------------
+    # Different train-test splits for the Physionet Challenge 2021 data:
+    # (you can use these by just adding them to the 'train_test_splits' dictionary)
+    # ----------------------------------------
+    #'split_1': {    
+    #        'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
+    #        'test': 'CPSC_CPSC-Extra'
+    #    },
+    # 'split_2': {    
+    #        'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra'],
+    #        'test': 'ChapmanShaoxing_Ningbo'
+    #    },
+    # 'split_3': {    
+    #        'train': train: ['G12EC', 'INCART', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+    #        'test': 'PTB_PTBXL'
+    #    },
+    # 'split_4': {    
+    #        'train': ['G12EC', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+    #        'test': 'INCART'
+    #    },
+    # 'split_5': {    
+    #        'train': ['INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+    #        'test': 'G12EC'
+    #    },
+    # ----------------------------------------

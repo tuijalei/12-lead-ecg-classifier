@@ -5,8 +5,8 @@ from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader
 from .models.seresnet18 import resnet18
-from .metrics import cal_multilabel_metrics, roc_curves
 from ..dataloader.dataset import ECGDataset, get_transforms
+from .metrics import cal_multilabel_metrics, roc_curves
 import pickle
 
 class Training(object):
@@ -31,9 +31,9 @@ class Training(object):
 
         # Load the datasets       
         training_set = ECGDataset(self.args.train_path, 
-                                  get_transforms('train', self.args.normalizetype, self.args.seq_length))
+                                  get_transforms('train'))
         validation_set = ECGDataset(self.args.val_path,
-                                    get_transforms('val', self.args.normalizetype, self.args.seq_length)) 
+                                    get_transforms('val')) 
         channels = training_set.channels
               
         self.train_dl = DataLoader(training_set,
@@ -53,8 +53,9 @@ class Training(object):
         self.model = resnet18(in_channel=channels, 
                               out_channel=len(self.args.labels))
 
+        # If more than 1 CUDA device used, use data parallelism
         if self.device_count > 1:
-            self.model = torch.nn.DataParallel(self.model)
+            self.model = torch.nn.DataParallel(self.model) 
         
         # Optimizer
         self.optimizer = optim.Adam(self.model.parameters(), 
@@ -104,7 +105,7 @@ class Training(object):
         
         for epoch in range(1, self.args.epochs+1):
             
-            # --- TRAIN AND EVALUATE ON TRAINING SET -----------------------------
+            # --- TRAIN ON TRAINING SET -----------------------------
             self.model.train()            
             train_loss = 0.0
             labels_all = torch.tensor((), device=self.device) # , device=torch.device('cuda:0')
@@ -117,7 +118,7 @@ class Training(object):
             for batch_idx, (ecgs, ag, labels) in enumerate(self.train_dl):
                 ecgs = ecgs.to(self.device) # ECGs
                 ag = ag.to(self.device) # age and gender
-                labels = labels.to(self.device) # diagnoses in SMONED CT codes  
+                labels = labels.to(self.device) # diagnoses in SNOMED CT codes  
                
                 with torch.set_grad_enabled(True):                    
         
@@ -134,7 +135,7 @@ class Training(object):
                     loss.backward()
                     self.optimizer.step()
                     
-                    # Printing the training information
+                    # Printing training information
                     if step % 100 == 0:
                         batch_loss += loss_tmp
                         batch_count += ecgs.size(0)
@@ -153,28 +154,27 @@ class Training(object):
             
             train_loss = train_loss / len(self.train_dl.dataset)            
             train_macro_avg_prec, train_micro_avg_prec, train_macro_auroc, train_micro_auroc = cal_multilabel_metrics(labels_all, logits_prob_all)
-            
-            
+
             # --- EVALUATE ON VALIDATION SET ------------------------------------- 
             self.model.eval()
-            val_loss = 0.0            
+            val_loss = 0.0  
             labels_all = torch.tensor((), device=self.device)
             logits_prob_all = torch.tensor((), device=self.device)  
             
             for ecgs, ag, labels in self.val_dl:
                 ecgs = ecgs.to(self.device) # ECGs
                 ag = ag.to(self.device) # age and gender
-                labels = labels.to(self.device) # diagnoses in SMONED CT codes 
+                labels = labels.to(self.device) # diagnoses in SNOMED CT codes 
                 
-                with torch.set_grad_enabled(False):                                                     
-                      
+                with torch.set_grad_enabled(False):  
+                    
                     logits = self.model(ecgs, ag)
                     loss = self.criterion(logits, labels)
                     logits_prob = self.sigmoid(logits)
                     val_loss += loss.item() * ecgs.size(0)                                 
                     labels_all = torch.cat((labels_all, labels), 0)
                     logits_prob_all = torch.cat((logits_prob_all, logits_prob), 0)
-                    
+
             val_loss = val_loss / len(self.val_dl.dataset)
             val_macro_avg_prec, val_micro_avg_prec, val_macro_auroc, val_micro_auroc = cal_multilabel_metrics(labels_all, logits_prob_all)
             
@@ -182,7 +182,7 @@ class Training(object):
             if epoch == 1 or epoch == self.args.epochs/2 or epoch == self.args.epochs:
                 roc_curves(labels_all, logits_prob_all, self.args.labels, epoch, self.args.roc_save_dir)
   
-            print('epoch %3d/%3d, train loss: %5.2f, train acc: %5.2f, val loss: %5.2f, val acc: %5.2f' % \
+            print('epoch %3d/%3d, train loss: %5.2f, train micro auroc: %5.2f, val loss: %5.2f, val micro auroc: %5.2f' % \
                   (epoch, 
                    self.args.epochs, 
                    train_loss, 
@@ -207,9 +207,11 @@ class Training(object):
             if epoch == self.args.epochs:
                 
                 print('Saving the model...')
-
+                    
+                # Whether or not you use data parallelism, save the state dictionary this way
+                # to have the flexibility to load the model any way you want to any device you want
                 model_state_dict = self.model.module.state_dict() if self.device_count > 1 else self.model.state_dict()
-                
+                    
                 # Save model
                 model_savepath = os.path.join(self.args.model_save_dir,
                                               self.args.yaml_file_name + '.pth')
@@ -217,7 +219,7 @@ class Training(object):
                 
                 # Save history
                 history_savepath = os.path.join(self.args.model_save_dir,
-                                                self.args.yaml_file_name + '_history.pickle')
+                                                self.args.yaml_file_name + '_train_history.pickle')
                 with open(history_savepath, mode='wb') as file:
                     pickle.dump(history, file, protocol=pickle.HIGHEST_PROTOCOL)
 

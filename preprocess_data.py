@@ -1,4 +1,4 @@
-import os
+import os, sys
 import numpy as np
 from src.dataloader.transforms import Linear_interpolation, BandPassFilter
 from distutils.dir_util import copy_tree
@@ -14,7 +14,7 @@ training and testing.
 Second, all the ECGs and header files are paired and loaded directory by directory. The header 
 files are needed for sample frequency as different frequencies are used in the data.
 
-Third, the preprocessing is performed. Transforms are loaded from /src/dataloader/transforms.
+Third, the preprocessing is performed by default. Transforms are loaded from /src/dataloader/transforms.
     - BandPassFilter: filters out certain frequencies that lie within a particular band or 
                       range of frequencies
     - Linear_interpolation : resamples the ECG using linear interpolation
@@ -26,6 +26,9 @@ You are welcome to change the attributes `from_directory` and `new_directory` as
 
     from_directory      Where to load the original (not preprocessed) data
     new_directory       Where to save the preprocessed data
+    
+You can also add your own transforms inside the "PREPROCESS TRANSFORMS" block, where
+the two mentioned are located.
 '''
 
 # Original data location
@@ -43,14 +46,13 @@ copy_tree(from_directory, new_directory)
 # Subdirectories of the copied directory
 directories = [os.path.join(new_directory, dir_tmp) for dir_tmp in os.listdir(new_directory) if not dir_tmp.startswith('.')]
 
-
 mat_suffix = '.mat'
 hea_suffix = '.hea'
 # Iterate over directories and preprocess ECGs
 for dire in directories:
     print('Opening {}...'.format(os.path.basename(dire)))
     
-    # Get all files - each recording consists of a MatLab file and a headerfile
+    # Get all files - each recording has a MatLab file and a headerfile
     mat_files = sorted([os.path.join(dire, file) for file in os.listdir(dire) if file.endswith(mat_suffix) and not 'preprocessed' in file])
     hea_files = sorted([os.path.join(dire, file) for file in os.listdir(dire) if file.endswith(hea_suffix) and not 'preprocessed' in file])
 
@@ -70,7 +72,6 @@ for dire in directories:
                 mat_hea_pairs.append((mat, hea))
                 break # If file found, no need to continue
 
-            
     print('Preprocessing {} ECGs...'.format(len(mat_hea_pairs)))
     # Iterate over mat and hea files and perform preprocessing
     for i, (mat, hea) in enumerate(mat_hea_pairs):
@@ -83,14 +84,13 @@ for dire in directories:
         ecg = loadmat(mat)
         ecg = np.asarray(ecg['val'], dtype=np.float64)
 
-
         # ------------------------------
         # --- PREPROCESS TRANSFORMS ----
 
         # - BandPass filter 
         bpf = BandPassFilter(fs = ecg_fs)
-        ecg = bpf(ecg)             
-       
+        ecg = bpf(ecg)
+        
         # - Linear interpolation
         linear_interp = Linear_interpolation(fs_new = 250, fs_old = ecg_fs)
         ecg = linear_interp(ecg)

@@ -1,8 +1,6 @@
 import torch
 import numpy as np
-import random    
-import sys
-import os
+import random, sys, os
 import pandas as pd
 from utils import load_yaml
 from src.modeling.train_utils import Training
@@ -34,16 +32,6 @@ def read_yaml(file, model_save_dir='', multiple=False):
     else:
         args.model_save_dir = os.path.join(os.getcwd(),'experiments', args.yaml_file_name)
         args.roc_save_dir = os.path.join(os.getcwd(),'experiments', args.yaml_file_name, 'ROC_curves')
-
-    # Parameters --------------------
-    args.device_count = 1
-    args.lr = 0.003
-    args.weight_decay = 0.00001
-    
-    # Transforms arguments ----------
-    args.seq_length = 4096
-    args.normalizetype = '0-1'
-    # -------------------------------
     
     # Get labels from the train csv
     # The class labels start from the 4th index (exclude path, age, gender and fs)
@@ -56,15 +44,13 @@ def read_yaml(file, model_save_dir='', multiple=False):
     # Directory for ROCs
     if not os.path.exists(args.roc_save_dir):
         os.makedirs(args.roc_save_dir)
-        
-    print('Arguments:')
+    
+    print('Arguments:\n' + '-'*10)
     for k, v in args.__dict__.items():
         print(k + ':', v)
-    
     print('-'*10)  
 
-    print('Running training code...')
-
+    print('Training a model...')
     trainer = Training(args)
     trainer.setup()
     trainer.train() 
@@ -98,15 +84,15 @@ if __name__ == '__main__':
     np.random.seed(seed)
     random.seed(seed)
     torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic =  True
+    torch.backends.cudnn.deterministic = True
     
     # Paths
-    csv_root = './data/split_csvs/physionet_stratified_smoke/'
-    data_root = './data/physionet_preprocessed_smoke/' 
+    csv_root = os.path.join('data', 'split_csvs', 'physionet_stratified_smoke')
+    data_root = os.path.join('data', 'physionet_preprocessed_smoke')
 
     # Load args
     given_arg = sys.argv[1]
-    print('Loading args from:', given_arg)
+    print('Loading arguments from', given_arg)
     arg_path = os.path.join(os.getcwd(), 'configs', 'training', given_arg)
 
     # Check if a yaml file or a directory given as an argument

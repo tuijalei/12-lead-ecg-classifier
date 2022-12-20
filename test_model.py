@@ -40,15 +40,6 @@ def read_yaml(file, model_save_dir='', multiple=False):
         if args.model in files:
             args.model_path = os.path.join(root, args.model)
 
-    # Device count
-    args.device_count = 2
-    # Transforms --------------------
-    args.seq_length = 4096
-    args.normalizetype = 'none'
-    # -------------------------------
-    # Threshold for predictions
-    args.threshold = 0.5
-    
     # Load labels
     args.labels = pd.read_csv(args.test_path, nrows=0).columns.tolist()[4:]
     
@@ -73,7 +64,7 @@ def read_multiple_yamls(path):
     # All yaml files
     yaml_files = [os.path.join(path, file) for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
     
-    # Save all trained models in the same directory in the 'experiments' directory
+    # Save all trained models in the same subdirectory in the 'experiments' directory
     dir_name = os.path.basename(path)
     model_save_dir = os.path.join(os.getcwd(),'experiments', dir_name) 
     
@@ -95,8 +86,8 @@ if __name__ == '__main__':
     torch.backends.cudnn.deterministic = True
 
     # Paths
-    csv_root = './data/split_csvs/physionet_stratified_smoke/'
-    data_root = './data/physionet_preprocessed_smoke/'
+    csv_root = os.path.join('data', 'split_csvs', 'physionet_stratified_smoke')
+    data_root = os.path.join('data', 'physionet_preprocessed_smoke')
 
     # Load args
     given_arg = sys.argv[1]

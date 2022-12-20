@@ -5,20 +5,26 @@ from .dataset_utils import load_data, encode_metadata
 from .transforms import Compose, RandomClip, Normalize, ValClip, Retype
 
 
-def get_transforms(dataset_type, normalizetype, seq_length):
+def get_transforms(dataset_type):
     ''' Get transforms for ECG data based on the dataset type (train, validation, test)
     '''
+    seq_length = 4096
+    normalizetype = '0-1'
+    
     data_transforms = {
+        
         'train': Compose([
             RandomClip(w=seq_length),
             Normalize(normalizetype),
             Retype() 
         ], p = 1.0),
+        
         'val': Compose([
             ValClip(w=seq_length),
             Normalize(normalizetype),
             Retype()
         ], p = 1.0),
+        
         'test': Compose([
             ValClip(w=seq_length),
             Normalize(normalizetype),
@@ -50,7 +56,6 @@ class ECGDataset(Dataset):
         self.fs = df['fs'].tolist()
 
         self.transforms = transforms
-
         self.channels = 12
         
     def __len__(self):

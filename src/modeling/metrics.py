@@ -1,9 +1,14 @@
-from sklearn.metrics import roc_auc_score, roc_curve, auc, average_precision_score, accuracy_score, f1_score
+from sklearn.metrics import roc_auc_score, roc_curve, auc, average_precision_score
 import numpy as np
+import torch
 import pandas as pd
 import matplotlib.pyplot as plt
 import os, sys
 import pickle
+
+import logging
+logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG)
+
 
 def cal_multilabel_metrics(y_true, y_pred):
     ''' Compute micro/macro AUROC and AUPRC
@@ -12,29 +17,38 @@ def cal_multilabel_metrics(y_true, y_pred):
     :type y_true: torch.Tensor
     :param y_pre: Probabilities of all the predicted labels
     :type y_pre: torch.Tensor
+    :param threshold: Decision threshold
+    :type threshold: float
     
     :return report: wanted metrics
     :rtype: float
-
     '''
+     
+    # Actual labels from tensor to numpy
+    actual_labels = y_true.cpu().detach().numpy().astype(np.int32)
     
-    y_true = y_true.cpu().detach().numpy().astype(np.int)
-    y_pred = y_pred.cpu().detach().numpy().astype(np.float)
-
-    macro_avg_prec = average_precision_score(y_true, y_pred, average = 'macro')
-    micro_avg_prec = average_precision_score(y_true, y_pred, average = 'micro')
+    # Define an empty label for predictions
+    pred_labels = y_pred.cpu().detach().numpy().astype(np.float32)
     
-    micro_auroc = roc_auc_score(y_true, y_pred, average = 'micro')
+    # -------- Compute wanted metrics ----------------
+    
+    # Average precision
+    macro_avg_prec = average_precision_score(actual_labels, pred_labels, average = 'macro')
+    micro_avg_prec = average_precision_score(actual_labels, pred_labels, average = 'micro')
+    
+    # AUROC
+    micro_auroc = roc_auc_score(actual_labels, pred_labels, average = 'micro')
     
     try:
-        macro_auroc = roc_auc_score(y_true, y_pred, average = 'macro')
+        macro_auroc = roc_auc_score(actual_labels, pred_labels, average = 'macro')
     except Exception as e:
         print('{} Macro AUROC set to 0.0'.format(e))
-        macro_auroc = 0.0
-
+        macro_auroc = 0.0 
+ 
+   
     return macro_avg_prec, micro_avg_prec, macro_auroc, micro_auroc
-    
-    
+
+
 def roc_curves(y_true, y_pred, labels, epoch=None, save_path='./experiments/'):
     '''Compute and plot the ROC Curves for each class, 
     also macro and micro. Save as a png image.
@@ -49,41 +63,40 @@ def roc_curves(y_true, y_pred, labels, epoch=None, save_path='./experiments/'):
     :type epoch: int
     '''
 
-    y_true = y_true.cpu().detach().numpy().astype(np.int)
-    y_pred = y_pred.cpu().detach().numpy().astype(np.float)
+    # Actual labels from tensor to numpy
+    actual_labels = y_true.cpu().detach().numpy().astype(np.int32)
     
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
+    # Predicted probabilities
+    pred_labels =  y_pred.cpu().detach().numpy().astype(np.float32)
+    
+    fpr, tpr, roc_auc = dict(), dict(), dict()
     
     # AUROC, fpr and tpr for each label
     for i in range(len(labels)):
-        fpr[i], tpr[i], _ = roc_curve(y_true[:, i], y_pred[:, i])
+        fpr[i], tpr[i], _ = roc_curve(actual_labels[:, i], pred_labels[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
-
-    fpr["micro"], tpr["micro"], _ = roc_curve(y_true.ravel(), y_pred.ravel())
+    
+    # Compute micro-average ROC curve and ROC area
+    fpr["micro"], tpr["micro"], _ = roc_curve(actual_labels.ravel(), pred_labels.ravel())
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
-    # Compute macro-average ROC curve and ROC area
-    # First aggregate all false positive rates
-    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(len(labels))]))
-
-    # Then interpolate all ROC curves at this points
-    mean_tpr = np.zeros_like(all_fpr)
+    # Interpolate all ROC curves at these points to compute macro-average ROC area
+    fpr_grid = np.linspace(0.0, 1.0, 1000)
+    mean_tpr = np.zeros_like(fpr_grid)
     for i in range(len(labels)):
-        mean_tpr += np.interp(all_fpr, fpr[i], tpr[i])
+        mean_tpr += np.interp(fpr_grid, fpr[i], tpr[i])  # linear interpolation
 
-    # Finally average it and compute AUC
+    # Average the mean TPR and compute AUC
     mean_tpr /= len(labels)
-
-    fpr["macro"] = all_fpr
+    
+    fpr["macro"] = fpr_grid
     tpr["macro"] = mean_tpr
     roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
 
     fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10, 5))
     fig.suptitle('ROC Curves')
 
-    # Plotting micro and macro ROCs
+    # Plotting micro-average and macro-average ROC curves
     ax1.plot(fpr["micro"], tpr["micro"],
              label='micro-average ROC curve (area = {0:0.2f})'.format(roc_auc["micro"]))
 
@@ -107,3 +120,7 @@ def roc_curves(y_true, y_pred, labels, epoch=None, save_path='./experiments/'):
     
     plt.savefig(save_path + '/' + name, bbox_inches = "tight")
     plt.close(fig)
+    
+    
+if __name__ == "__main__":
+    cal_multilabel_metrics(0, 1)

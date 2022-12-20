@@ -1,15 +1,14 @@
 import numpy as np
 import os, sys
+import time
 import torch
 from torch import nn
-import pickle
-import time
 import pandas as pd
 from torch.utils.data import DataLoader
 from .models.seresnet18 import resnet18
 from ..dataloader.dataset import ECGDataset, get_transforms
 from .metrics import cal_multilabel_metrics, roc_curves
-
+import pickle
 
 class Predicting(object):
     def __init__(self, args):
@@ -36,28 +35,24 @@ class Predicting(object):
 
         # Load the test data
         testing_set = ECGDataset(self.args.test_path, 
-                                 get_transforms('test', self.args.normalizetype, self.args.seq_length))
+                                 get_transforms('test'))
         channels = testing_set.channels
         self.test_dl = DataLoader(testing_set,
-                                     batch_size=1,
-                                     shuffle=False)
+                                  batch_size=1,
+                                  shuffle=False,
+                                  pin_memory=(True if self.device == 'cuda' else False),
+                                  drop_last=True)
         
         # Load the trained model
         self.model = resnet18(in_channel=channels,
                          out_channel=len(self.args.labels))
+        
+        self.model.load_state_dict(torch.load(self.args.model_path))
 
-        # Load the model based on the device condition
-        if torch.cuda.is_available():
-            self.model = torch.nn.DataParallel(self.model)    
-        else:
-            self.model.load_state_dict(torch.load(self.args.model_path, map_location=self.device))
-        
         self.sigmoid = nn.Sigmoid()
-        
-        self.model.to(self.device)
         self.sigmoid.to(self.device)
-        self.model.eval()
-    
+        self.model.to(self.device)
+        
     def predict(self):
         ''' Make predictions
         '''
@@ -72,31 +67,49 @@ class Predicting(object):
         history['labels'] = self.args.labels
         history['test_csv'] = self.args.test_path
         
+        start_time_sec = time.time()
+ 
+        # --- EVALUATE ON TESTING SET ------------------------------------- 
+        self.model.eval()
         labels_all = torch.tensor((), device=self.device)
         logits_prob_all = torch.tensor((), device=self.device)  
         
-        start_time_sec = time.time()
- 
-        # Iterate over test data
-        for i, (ecg, ag, labels) in enumerate(self.test_dl):
-            ecg = ecg.to(self.device) # ECGs
+        for i, (ecgs, ag, labels) in enumerate(self.test_dl):
+            ecgs = ecgs.to(self.device) # ECGs
             ag = ag.to(self.device) # age and gender
             labels = labels.to(self.device) # diagnoses in SMONED CT codes 
 
-            with torch.set_grad_enabled(False):
+            with torch.set_grad_enabled(False):  
                 
-                logits = self.model(ecg, ag)
+                logits = self.model(ecgs, ag)
                 logits_prob = self.sigmoid(logits)
                 labels_all = torch.cat((labels_all, labels), 0)
                 logits_prob_all = torch.cat((logits_prob_all, logits_prob), 0)
 
+           
+            # ------ One-hot-encode predicted label -----------
+            # Define an empty label for predictions
+            pred_label = np.zeros(len(self.args.labels))
+
+            # Find the maximum values within the probabilities
+            _, likeliest_dx = torch.max(logits_prob, 1)
+
+            # Predicted probabilities from tensor to numpy
+            likeliest_dx = likeliest_dx.cpu().detach().numpy()
+
+            # First, add the most likeliest diagnosis to the predicted label
+            pred_label[likeliest_dx] = 1
+
+            # Then, add all the others that are above the decision threshold
+            other_dx = logits_prob.cpu().detach().numpy() >= self.args.threshold
+            pred_label = pred_label + other_dx
+            pred_label[pred_label > 1.1] = 1
+            pred_label = np.squeeze(pred_label)
+
+            # --------------------------------------------------
             
-            # Threshold check: if (prob-threshold) > 0, mark as 1
-            pred_label = np.zeros(len(self.args.labels), dtype=int)
+            # Save also probabilities but returns them first in numpy
             scores = logits_prob.cpu().detach().numpy()
-            y_pre = (scores - self.args.threshold) >= 0
-            pred_label = pred_label + y_pre
-            pred_label = np.squeeze(pred_label.astype(np.int))
             scores = np.squeeze(scores)
             
             # Save the prediction
@@ -108,7 +121,7 @@ class Predicting(object):
         # Predicting metrics
         test_macro_avg_prec, test_micro_avg_prec, test_macro_auroc, test_micro_auroc = cal_multilabel_metrics(labels_all, logits_prob_all)
         
-        print('Predicting metrics: macro avg prec: %5.2f, micro avg prec: %5.2f, macro auroc %5.2f, micro auroc: %5.2f' % \
+        print('test macro avg prec: %5.2f, test micro avg prec: %5.2f, test macro auroc %5.2f, test micro auroc: %5.2f' % \
                   (test_macro_avg_prec,
                    test_micro_avg_prec,
                    test_macro_auroc,
@@ -116,13 +129,15 @@ class Predicting(object):
         
         roc_curves(labels_all, logits_prob_all, self.args.labels, save_path = self.args.output_dir)
         
+        # Add information to testing history
         history['test_micro_auroc'] = test_micro_auroc
         history['test_micro_avg_prec'] = test_micro_avg_prec
         history['test_macro_auroc'] = test_macro_auroc
         history['test_macro_avg_prec'] = test_macro_avg_prec
         
         # Save the history
-        history_savepath = os.path.join(self.args.output_dir, 'test_history.pickle')
+        history_savepath = os.path.join(self.args.output_dir,
+                                        self.args.yaml_file_name + '_test_history.pickle')
         with open(history_savepath, mode='wb') as file:
             pickle.dump(history, file, protocol=pickle.HIGHEST_PROTOCOL)
             
@@ -143,9 +158,14 @@ class Predicting(object):
         0.9,       0.6,       0.2,       0.05,      0.2,      0.35,       0.35,     
         '''
 
+        # Make a directory for the predictions
+        pred_save_dir = os.path.join(self.args.output_dir, 'predictions')
+        if not os.path.isdir(pred_save_dir):
+            os.makedirs(pred_save_dir)    
+        
         recording = os.path.basename(os.path.splitext(filename)[0])
         new_file = os.path.basename(filename.replace('.mat','.csv'))
-        output_file = os.path.join(self.args.output_dir, new_file)
+        output_file = os.path.join(pred_save_dir, new_file)
 
         # Include the filename as the recording number
         recording_string = '#{}'.format(recording)
