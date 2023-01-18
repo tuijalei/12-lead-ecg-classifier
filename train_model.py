@@ -5,11 +5,13 @@ import pandas as pd
 from utils import load_yaml
 from src.modeling.train_utils import Training
 
-def read_yaml(file, model_save_dir='', multiple=False):
+def read_yaml(file, csv_root, model_save_dir='', multiple=False):
     ''' Read a yaml file and perform training.
     
     :param file: Absolute path for the yaml file wanted to read
     :type file: str
+    :param csv_root: Absolute path for the csv file
+    :type csv_root: str
     :param model_save_dir: If multiple yamls are read, the model directory is  
                            a subdirectory of the 'experiments' directory
     :type model_save_dir: str
@@ -56,7 +58,7 @@ def read_yaml(file, model_save_dir='', multiple=False):
     trainer.train() 
     
 
-def read_multiple_yamls(path):
+def read_multiple_yamls(path, csv_root):
     ''' Read multiple yaml files from the given directory
     
     :param directory: Absolute path for the directory
@@ -71,7 +73,7 @@ def read_multiple_yamls(path):
     
     # Reading the yaml files and training models for each
     for file in yaml_files:
-        read_yaml(file, model_save_dir, True)
+        read_yaml(file, csv_root, model_save_dir, True)
 
 
 if __name__ == '__main__':
@@ -86,9 +88,12 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     
-    # Paths
-    csv_root = os.path.join('data', 'split_csvs', 'physionet_stratified_smoke')
-    data_root = os.path.join('data', 'physionet_preprocessed_smoke')
+    # ----- Set the path here! -----
+    
+    # Root where the needed CSV file exists
+    csv_root = os.path.join(os.getcwd(), 'data', 'split_csvs', 'physionet_stratified_smoke')
+    
+    # ------------------------------
 
     # Load args
     given_arg = sys.argv[1]
@@ -101,10 +106,10 @@ if __name__ == '__main__':
 
         if 'yaml' in given_arg:
             # Run one yaml
-            read_yaml(arg_path)
+            read_yaml(arg_path, csv_root)
         else:
             # Run multiple yamls from a directory
-            read_multiple_yamls(arg_path)
+            read_multiple_yamls(arg_path, csv_root)
             
     else:
         raise Exception('No such file nor directory exists! Check the arguments.')

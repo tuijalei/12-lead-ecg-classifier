@@ -30,8 +30,8 @@ class Predicting(object):
         
         # Find test files based on the test csv (for naming saved predictions)
         # The paths for these files are in the 'path' column
-        file_names = pd.read_csv(self.args.test_path, usecols=['path']).values.tolist()
-        self.file_names = [f for file in file_names for f in file]
+        filenames = pd.read_csv(self.args.test_path, usecols=['path']).values.tolist()
+        self.filenames = [f for file in filenames for f in file]
 
         # Load the test data
         testing_set = ECGDataset(self.args.test_path, 
@@ -46,7 +46,6 @@ class Predicting(object):
         # Load the trained model
         self.model = resnet18(in_channel=channels,
                          out_channel=len(self.args.labels))
-        
         self.model.load_state_dict(torch.load(self.args.model_path))
 
         self.sigmoid = nn.Sigmoid()
@@ -108,25 +107,28 @@ class Predicting(object):
 
             # --------------------------------------------------
             
-            # Save also probabilities but returns them first in numpy
+            # Save also probabilities but return them first in numpy
             scores = logits_prob.cpu().detach().numpy()
             scores = np.squeeze(scores)
             
             # Save the prediction
-            self.save_predictions(self.file_names[i], pred_label, scores)
+            self.save_predictions(self.filenames[i], pred_label, scores, self.args.pred_save_dir)
 
             if i % 1000 == 0:
-                print('{}/{} predictions made'.format(i+1, len(self.test_dl)))
+                print('{:<4}/{:>4} predictions made'.format(i+1, len(self.test_dl)))
 
         # Predicting metrics
-        test_macro_avg_prec, test_micro_avg_prec, test_macro_auroc, test_micro_auroc = cal_multilabel_metrics(labels_all, logits_prob_all)
+        test_macro_avg_prec, test_micro_avg_prec, test_macro_auroc, test_micro_auroc, challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels)
+       
         
-        print('test macro avg prec: %5.2f, test micro avg prec: %5.2f, test macro auroc %5.2f, test micro auroc: %5.2f' % \
-                  (test_macro_avg_prec,
-                   test_micro_avg_prec,
-                   test_macro_auroc,
-                   test_micro_auroc))
+        print('macro avg prec: {:<6.2f} micro avg prec: {:<6.2f} macro auroc: {:<6.2f} micro auroc: {:<6.2f} challenge metric: {:<6.2f}'.format(
+            test_macro_avg_prec,
+            test_micro_avg_prec,
+            test_macro_auroc,
+            test_micro_auroc,
+            challenge_metric))
         
+        # Draw ROC curve for predictions
         roc_curves(labels_all, logits_prob_all, self.args.labels, save_path = self.args.output_dir)
         
         # Add information to testing history
@@ -141,6 +143,7 @@ class Predicting(object):
         with open(history_savepath, mode='wb') as file:
             pickle.dump(history, file, protocol=pickle.HIGHEST_PROTOCOL)
             
+        torch.cuda.empty_cache()
         
         end_time_sec = time.time()
         total_time_sec = end_time_sec - start_time_sec
@@ -148,7 +151,7 @@ class Predicting(object):
         print('Time total:     %5.2f sec' % (total_time_sec))
 
  
-    def save_predictions(self, filename, labels, scores):
+    def save_predictions(self, filename, labels, scores, pred_dir):
         '''Save the challenge predictions in csv file with record id, 
         diagnoses predicted and their confidence score as
 
@@ -157,15 +160,10 @@ class Predicting(object):
         1,         1,         0,         0,         0,        0,          0,        
         0.9,       0.6,       0.2,       0.05,      0.2,      0.35,       0.35,     
         '''
-
-        # Make a directory for the predictions
-        pred_save_dir = os.path.join(self.args.output_dir, 'predictions')
-        if not os.path.isdir(pred_save_dir):
-            os.makedirs(pred_save_dir)    
         
         recording = os.path.basename(os.path.splitext(filename)[0])
         new_file = os.path.basename(filename.replace('.mat','.csv'))
-        output_file = os.path.join(pred_save_dir, new_file)
+        output_file = os.path.join(pred_dir, new_file)
 
         # Include the filename as the recording number
         recording_string = '#{}'.format(recording)

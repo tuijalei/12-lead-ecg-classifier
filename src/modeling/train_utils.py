@@ -30,10 +30,8 @@ class Training(object):
             print('using {} cpu'.format(self.device_count))
 
         # Load the datasets       
-        training_set = ECGDataset(self.args.train_path, 
-                                  get_transforms('train'))
-        validation_set = ECGDataset(self.args.val_path,
-                                    get_transforms('val')) 
+        training_set = ECGDataset(self.args.train_path, get_transforms('train'))
+        validation_set = ECGDataset(self.args.val_path, get_transforms('val')) 
         channels = training_set.channels
               
         self.train_dl = DataLoader(training_set,
@@ -85,12 +83,14 @@ class Training(object):
         history['train_micro_avg_prec'] = []  
         history['train_macro_auroc'] = []
         history['train_macro_avg_prec'] = [] 
+        history['train_challenge_metric'] = []
         
         history['val_loss'] = []
         history['val_micro_auroc'] = []
         history['val_micro_avg_prec'] = []
         history['val_macro_auroc'] = []
         history['val_macro_avg_prec'] = []
+        history['val_challenge_metric'] = []
         
         history['labels'] = self.args.labels
         history['epochs'] = self.args.epochs
@@ -140,7 +140,7 @@ class Training(object):
                         batch_loss += loss_tmp
                         batch_count += ecgs.size(0)
                         batch_loss = batch_loss / batch_count
-                        print('epoch: {} [{}/{}], train loss: {:.4f}'.format(
+                        print('epoch {:^3} [{}/{}] train loss: {:>5.4f}'.format(
                             epoch, 
                             batch_idx * len(ecgs), 
                             len(self.train_dl.dataset), 
@@ -153,7 +153,7 @@ class Training(object):
 
             
             train_loss = train_loss / len(self.train_dl.dataset)            
-            train_macro_avg_prec, train_micro_avg_prec, train_macro_auroc, train_micro_auroc = cal_multilabel_metrics(labels_all, logits_prob_all)
+            train_macro_avg_prec, train_micro_avg_prec, train_macro_auroc, train_micro_auroc, train_challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels)
 
             # --- EVALUATE ON VALIDATION SET ------------------------------------- 
             self.model.eval()
@@ -176,19 +176,23 @@ class Training(object):
                     logits_prob_all = torch.cat((logits_prob_all, logits_prob), 0)
 
             val_loss = val_loss / len(self.val_dl.dataset)
-            val_macro_avg_prec, val_micro_avg_prec, val_macro_auroc, val_micro_auroc = cal_multilabel_metrics(labels_all, logits_prob_all)
+            val_macro_avg_prec, val_micro_avg_prec, val_macro_auroc, val_micro_auroc, val_challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels)
             
             # Create ROC Curves at the beginning, middle and end of training
             if epoch == 1 or epoch == self.args.epochs/2 or epoch == self.args.epochs:
                 roc_curves(labels_all, logits_prob_all, self.args.labels, epoch, self.args.roc_save_dir)
   
-            print('epoch %3d/%3d, train loss: %5.2f, train micro auroc: %5.2f, val loss: %5.2f, val micro auroc: %5.2f' % \
-                  (epoch, 
-                   self.args.epochs, 
-                   train_loss, 
-                   train_micro_auroc, 
-                   val_loss,
-                   val_micro_auroc))
+            print('epoch {:^4}/{:^4} train loss: {:<6.2f}  train micro auroc: {:<6.2f}  train challenge metric: {:<6.2f}'.format( 
+                epoch, 
+                self.args.epochs, 
+                train_loss, 
+                train_micro_auroc,
+                train_challenge_metric))
+
+            print('                val loss:  {:<6.2f}   val micro auroc: {:<6.2f}    val challenge metric:  {:<6.2f}'.format(
+                val_loss,
+                val_micro_auroc,
+                val_challenge_metric))
         
             # Add information for training history
             history['train_loss'].append(train_loss)
@@ -196,12 +200,14 @@ class Training(object):
             history['train_micro_avg_prec'].append(train_micro_avg_prec)
             history['train_macro_auroc'].append(train_macro_auroc)
             history['train_macro_avg_prec'].append(train_macro_avg_prec)
+            history['train_challenge_metric'].append(train_challenge_metric)
             
             history['val_loss'].append(val_loss)
             history['val_micro_auroc'].append(val_micro_auroc)
             history['val_micro_avg_prec'].append(val_micro_avg_prec)         
             history['val_macro_auroc'].append(val_macro_auroc)  
-            history['val_macro_avg_prec'].append(val_macro_avg_prec)  
+            history['val_macro_avg_prec'].append(val_macro_avg_prec)
+            history['val_challenge_metric'].append(val_challenge_metric)
             
             # Save trained model after all the epochs
             if epoch == self.args.epochs:
@@ -223,7 +229,8 @@ class Training(object):
                 with open(history_savepath, mode='wb') as file:
                     pickle.dump(history, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-            torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
+          
          
         # END OF TRAINING LOOP        
         

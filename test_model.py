@@ -5,13 +5,14 @@ import pandas as pd
 from utils import load_yaml
 from src.modeling.predict_utils import Predicting
 
-
-def read_yaml(file, model_save_dir='', multiple=False):
+def read_yaml(file, csv_root, model_save_dir='', multiple=False):
     ''' Read a given yaml and perform classification predictions.
-    Evaluate the predictions made.
+    Evaluate the predictions.
     
     :param file: Absolute path for the yaml file wanted to read
     :type file: str
+    :param csv_root: Absolute path for the csv file
+    :type csv_root: str
     :param model_save_dir: If multiple yamls are read, the model directory is  
                            a subdirectory of the 'experiments' directory
     :type model_save_dir: str
@@ -32,13 +33,25 @@ def read_yaml(file, model_save_dir='', multiple=False):
     
     # Make sure the directory for outputs exists
     if not os.path.isdir(args.output_dir):
-        os.makedirs(args.output_dir)    
+        os.makedirs(args.output_dir)  
+        
+    # Make a subdirectory into the output directory where to save the predictions
+    args.pred_save_dir = os.path.join(args.output_dir, 'predictions')
+    
+    # Make sure the directory for predictions exists
+    if not os.path.isdir(args.pred_save_dir):
+        os.makedirs(args.pred_save_dir)    
 
-    # Find the trained model from the ´experiments´ directory
-    # since it should be saved there
+    # Find the trained model from the ´experiments´ directory as it should be saved there
     for root, dirs, files in os.walk(os.path.join(os.getcwd(), 'experiments')):
-        if args.model in files:
-            args.model_path = os.path.join(root, args.model)
+                if args.model in files:
+                    args.model_path = os.path.join(root, args.model)
+    
+    # Check if model_path never set, i.e., the trained model was found
+    try:
+        args.model_path
+    except AttributeError as ne:
+        print('AttributeError:', ne, 'I.e. model not found. Check if you´ve trained one.')
 
     # Load labels
     args.labels = pd.read_csv(args.test_path, nrows=0).columns.tolist()[4:]
@@ -55,7 +68,7 @@ def read_yaml(file, model_save_dir='', multiple=False):
     pred.predict()
 
     
-def read_multiple_yamls(path):
+def read_multiple_yamls(path, csv_root):
     ''' Read multiple yaml files from the given directory
     
     :param directory: Absolute path for the directory
@@ -67,10 +80,10 @@ def read_multiple_yamls(path):
     # Save all trained models in the same subdirectory in the 'experiments' directory
     dir_name = os.path.basename(path)
     model_save_dir = os.path.join(os.getcwd(),'experiments', dir_name) 
-    
+
     # Running the yaml files and training models for each
     for file in yaml_files:
-        read_yaml(file, model_save_dir, True)
+        read_yaml(file, csv_root, model_save_dir, True)
 
 
 if __name__ == '__main__':
@@ -85,9 +98,12 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
-    # Paths
-    csv_root = os.path.join('data', 'split_csvs', 'physionet_stratified_smoke')
-    data_root = os.path.join('data', 'physionet_preprocessed_smoke')
+    # ----- Set the path here! -----
+    
+    # Root where the needed CSV file exists
+    csv_root = os.path.join(os.getcwd(), 'data', 'split_csvs', 'physionet_stratified_smoke')
+    
+    # ------------------------------
 
     # Load args
     given_arg = sys.argv[1]
@@ -100,10 +116,10 @@ if __name__ == '__main__':
 
         if 'yaml' in given_arg:
             # Run one yaml
-            read_yaml(arg_path)
+            read_yaml(arg_path, csv_root)
         else:
             # Run multiple yamls from a directory
-            read_multiple_yamls(arg_path)
+            read_multiple_yamls(arg_path, csv_root)
 
     else:
         raise Exception('No such file nor directory exists! Check the arguments.')

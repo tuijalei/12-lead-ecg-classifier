@@ -276,15 +276,15 @@ if __name__ == '__main__':
     # ----- WHICH DATA SPLIT DO YOU WANT TO USE WHEN CREATING CSV FILES?
     # Database-wise split :: stratified = False
     # Stratified split :: stratified = True
-    stratified = False
+    stratified = True
     
     # ----- WHERE TO LOAD THE ECGS FROM - give the name of the data directory
-    # Note that the root for this is the data dictionary
+    # Note that the root for this is the 'data' dictionary
     data_dir = 'physionet_preprocessed_smoke'
     
     # ----- WHERE TO SAVE THE CSV FILES - give a name for the new directory
-    # Note that the root for this is the data/split_csv/ directory
-    csv_dir = 'physionet_DBwise_smoke'
+    # Note that the root for this is the 'data/split_csv/' directory
+    csv_dir = 'physionet_stratified_smoke'
 
     # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 
     labels = ['426783006', '426177001', '164934002', '427084000', '164890007', '39732003', '164889003', '59931005', '427393009', '270492004']
@@ -307,6 +307,22 @@ if __name__ == '__main__':
                 'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
                 'test': 'CPSC_CPSC-Extra'
             },
+            'split_2': {    
+                    'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra'],
+                    'test': 'ChapmanShaoxing_Ningbo'
+                },
+            'split_3': {    
+                    'train': ['G12EC', 'INCART', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+                    'test': 'PTB_PTBXL'
+                },
+            'split_4': {    
+                    'train': ['G12EC', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+                    'test': 'INCART'
+                },
+            'split_5': {    
+                    'train': ['INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+                    'test': 'G12EC'
+                }
         }
 
         # Perform stratified data split
@@ -340,7 +356,7 @@ if __name__ == '__main__':
     #        'test': 'ChapmanShaoxing_Ningbo'
     #    },
     # 'split_3': {    
-    #        'train': train: ['G12EC', 'INCART', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
+    #        'train': ['G12EC', 'INCART', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
     #        'test': 'PTB_PTBXL'
     #    },
     # 'split_4': {    

@@ -4,8 +4,7 @@ __pycache__/
 **/__pycache__/
 **/.idea/
 
-# Ignore the whole Physionet2021 dataset and
-# its preprocessed version
+# Ignore the whole Physionet2021 dataset and its preprocessed version
 data/physionet_data/
 data/physionet_preprocessed/
 
@@ -15,11 +14,36 @@ data/physionet_preprocessed_smoke/
 # Ignore the tar.gz files of Physionet2021 data
 notebooks/*.tar.gz
 
-# Ignore the configuration yaml files of whole dataset
-configs/predicting/predict_DBwise/
-configs/predicting/predict_stratified/
-configs/training/train_stratified/
-configs/training/train_DBwise/
+# Ignore all other configuration yaml files except spesific ones for smoke testing
+configs/*
+!configs/predicting/predict_DBwise_smoke/split_1.yaml
+!configs/predicting/predict_DBwise_smoke/split_2.yaml
+!configs/predicting/predict_DBwise_smoke/split_3.yaml
+!configs/predicting/predict_DBwise_smoke/split_4.yaml
+!configs/predicting/predict_stratifiede_smoke/split_1_1.yaml
+!configs/predicting/predict_stratifiede_smoke/split_1_2.yaml
+!configs/predicting/predict_stratifiede_smoke/split_1_3.yaml
+!configs/predicting/predict_stratifiede_smoke/split_1_4.yaml
+!configs/training/train_DBwise_smoke/split_1.yaml
+!configs/training/train_DBwise_smoke/split_2.yaml
+!configs/training/train_DBwise_smoke/split_3.yaml
+!configs/training/train_DBwise_smoke/split_4.yaml
+!configs/training/train_stratifiede_smoke/split_1_1.yaml
+!configs/training/traint_stratifiede_smoke/split_1_2.yaml
+!configs/training/train_stratifiede_smoke/split_1_3.yaml
+!configs/training/train_stratifiede_smoke/split_1_4.yaml
+
+# Ignore all other data csv files except spesific ones for smoke testing
+data/split_csvs/*
+!data/split_csvs/physionet_stratified_smoke/test_split_1.csv
+!data/split_csvs/physionet_stratified_smoke/train_split_1_1.csv
+!data/split_csvs/physionet_stratified_smoke/train_split_1_2.csv
+!data/split_csvs/physionet_stratified_smoke/train_split_1_3.csv
+!data/split_csvs/physionet_stratified_smoke/train_split_1_4.csv
+!data/split_csvs/physionet_stratified_smoke/val_split_1_1.csv 
+!data/split_csvs/physionet_stratified_smoke/val_split_1_2.csv 
+!data/split_csvs/physionet_stratified_smoke/val_split_1_3.csv 
+!data/split_csvs/physionet_stratified_smoke/val_split_1_4.csv 
 
 # Ignore the experiments directory
 experiments/*
