@@ -153,7 +153,7 @@ class Training(object):
 
             
             train_loss = train_loss / len(self.train_dl.dataset)            
-            train_macro_avg_prec, train_micro_avg_prec, train_macro_auroc, train_micro_auroc, train_challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels)
+            train_macro_avg_prec, train_micro_avg_prec, train_macro_auroc, train_micro_auroc, train_challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels, self.args.threshold)
 
             # --- EVALUATE ON VALIDATION SET ------------------------------------- 
             self.model.eval()
@@ -176,7 +176,7 @@ class Training(object):
                     logits_prob_all = torch.cat((logits_prob_all, logits_prob), 0)
 
             val_loss = val_loss / len(self.val_dl.dataset)
-            val_macro_avg_prec, val_micro_avg_prec, val_macro_auroc, val_micro_auroc, val_challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels)
+            val_macro_avg_prec, val_micro_avg_prec, val_macro_auroc, val_micro_auroc, val_challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels, self.args.threshold)
             
             # Create ROC Curves at the beginning, middle and end of training
             if epoch == 1 or epoch == self.args.epochs/2 or epoch == self.args.epochs:

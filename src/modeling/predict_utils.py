@@ -118,7 +118,7 @@ class Predicting(object):
                 print('{:<4}/{:>4} predictions made'.format(i+1, len(self.test_dl)))
 
         # Predicting metrics
-        test_macro_avg_prec, test_micro_avg_prec, test_macro_auroc, test_micro_auroc, challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels)
+        test_macro_avg_prec, test_micro_avg_prec, test_macro_auroc, test_micro_auroc, challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels, self.args.threshold)
        
         
         print('macro avg prec: {:<6.2f} micro avg prec: {:<6.2f} macro auroc: {:<6.2f} micro auroc: {:<6.2f} challenge metric: {:<6.2f}'.format(

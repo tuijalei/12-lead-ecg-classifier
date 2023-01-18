@@ -7,7 +7,7 @@ import os, sys
 import pickle
 
  
-def cal_multilabel_metrics(y_true, y_pre, labels):
+def cal_multilabel_metrics(y_true, y_pre, labels, threshold=0.5):
     ''' Compute micro/macro AUROC and AUPRC
     
     :param y_true: Actual class labels
@@ -35,7 +35,7 @@ def cal_multilabel_metrics(y_true, y_pre, labels):
     pre_binary[np.arange(true_labels.shape[0]), likeliest_dx] = 1
 
     # Then, add all the others that are above the decision threshold
-    other_dx = pre_prob >= 0.5
+    other_dx = pre_prob >= threshold
 
     pre_binary = pre_binary + other_dx
     pre_binary[pre_binary > 1.1] = 1
