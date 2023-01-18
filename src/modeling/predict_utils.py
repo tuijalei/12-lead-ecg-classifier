@@ -46,7 +46,14 @@ class Predicting(object):
         # Load the trained model
         self.model = resnet18(in_channel=channels,
                          out_channel=len(self.args.labels))
-        self.model.load_state_dict(torch.load(self.args.model_path))
+
+        # Consider the GPU or CPU condition
+        if torch.cuda.is_available():
+            if self.device_count > 1:
+                self.model = torch.nn.DataParallel(self.model)
+                self.model.module.load_state_dict(torch.load(self.args.model_path))
+        else:
+            self.model.load_state_dict(torch.load(self.args.model_path, map_location=self.device))
 
         self.sigmoid = nn.Sigmoid()
         self.sigmoid.to(self.device)
@@ -55,6 +62,9 @@ class Predicting(object):
     def predict(self):
         ''' Make predictions
         '''
+        print('predict() called: model={}, device={}'.format(
+              type(self.model).__name__,
+              self.device))
 
         # Saving the history
         history = {}
