@@ -16,6 +16,7 @@ notebooks/*.tar.gz
 
 # Ignore all other configuration yaml files except spesific ones for smoke testing
 configs/*
+!configs/predicting/predict_smoke.yaml
 !configs/predicting/predict_DBwise_smoke/split_1.yaml
 !configs/predicting/predict_DBwise_smoke/split_2.yaml
 !configs/predicting/predict_DBwise_smoke/split_3.yaml
@@ -24,6 +25,8 @@ configs/*
 !configs/predicting/predict_stratifiede_smoke/split_1_2.yaml
 !configs/predicting/predict_stratifiede_smoke/split_1_3.yaml
 !configs/predicting/predict_stratifiede_smoke/split_1_4.yaml
+
+!configs/testing/train_smoke.yaml
 !configs/training/train_DBwise_smoke/split_1.yaml
 !configs/training/train_DBwise_smoke/split_2.yaml
 !configs/training/train_DBwise_smoke/split_3.yaml
