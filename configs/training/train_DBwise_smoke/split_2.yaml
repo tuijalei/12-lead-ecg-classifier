@@ -5,6 +5,9 @@ val_file: G12EC.csv
 # TRAINING SETTINGS
 batch_size: 10
 num_workers: 0
+epochs: 5
+lr: 0.003000
+weight_decay: 0.000010
 
-# SAVE, LOAD AND DISPLAY INFORMATION
-epochs: 1
+# DEVICE CONFIGS
+device_count: 1
