@@ -1,3 +1,9 @@
 # INITIAL SETTINGS
-test_file: 'test_split0.csv'
-model: 'train_smoke.pth'
+test_file: test_split_1.csv
+model: train_smoke.pth
+
+# TESTING SETTINGS
+threshold: 0.500000
+
+# DEVICE CONFIGS
+device_count: 1
