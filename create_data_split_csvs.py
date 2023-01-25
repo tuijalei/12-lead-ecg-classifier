@@ -306,23 +306,7 @@ if __name__ == '__main__':
             'split_1': {    
                 'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
                 'test': 'CPSC_CPSC-Extra'
-            },
-            'split_2': {    
-                    'train': ['G12EC', 'INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra'],
-                    'test': 'ChapmanShaoxing_Ningbo'
-                },
-            'split_3': {    
-                    'train': ['G12EC', 'INCART', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-                    'test': 'PTB_PTBXL'
-                },
-            'split_4': {    
-                    'train': ['G12EC', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-                    'test': 'INCART'
-                },
-            'split_5': {    
-                    'train': ['INCART', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-                    'test': 'G12EC'
-                }
+            }
         }
 
         # Perform stratified data split
