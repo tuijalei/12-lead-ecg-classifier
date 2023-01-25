@@ -148,7 +148,7 @@ class Predicting(object):
         history['test_micro_avg_prec'] = test_micro_avg_prec
         history['test_macro_auroc'] = test_macro_auroc
         history['test_macro_avg_prec'] = test_macro_avg_prec
-        historu['test_challenge_metric'] = test_challenge_metric
+        history['test_challenge_metric'] = test_challenge_metric
         
         # Save the history
         history_savepath = os.path.join(self.args.output_dir,
