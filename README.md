@@ -21,12 +21,12 @@ Recommended Python version 3.10.4 (tested with Python 3.10.4).
 
 # Data
 
-Check out the notebook [Introduction for Data Handling](/notebooks/1_introduction_data_handling.ipynb) in `/notebooks/` for further introductions for downloading, preprocessing and splitting the data.
+Check out the notebook [Introduction to data handling](/notebooks/1_introduction_data_handling.ipynb) in `/notebooks/` for more information on downloading, preprocessing and splitting data.
 
 
-# In a Nutshell
+# In a nutshell
 
-If you want to preprocess data, you can do it with the script `preprocess_data.py`. This is not mandatory for the use of the repository, but keep in mind that if some transforms (e.g. BandPassFilter) are used during the training phase, training might slow down significantly. To preprocess the data, use the following command
+If you want to preprocess data, you can do it with the `preprocess_data.py` script. This is not mandatory for the use of the repository, but keep in mind that if some transforms (e.g. BandPassFilter) are used during the training phase, training might slow down significantly. To preprocess the data, use the following command
 
 ```
 python preprocess_data.py
@@ -35,9 +35,9 @@ python preprocess_data.py
 Consider checking the `configs` directory for yaml configurations:
 
 * Yaml files in the `training` directory are used to train a model
-* Yaml files in the `predicting` directory are used for predictions and evaluation
+* Yaml files in the `predicting` directory are used to test and evaluate a model
 
-Two notebooks are available for creating training and testing yaml files based on the data splitting performed with the script `create_data_split_csvs.py`: [Yaml files of Database-wise Split for Training and Prediction](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of Stratified Split for Training and Prediction](/notebooks/2_physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
+Two notebooks are available for creating training and testing yaml files based on the data splitting performed with the `create_data_split_csvs.py` script: [Yaml files of database-wise split for training and testing](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of stratified split for training and testing](/notebooks/2_physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
 
 1) To split the data for the model to use in training and testing, you'll need the following command
 
@@ -57,7 +57,7 @@ The main structure of csv files are as follows:
 | ./Data/A0004.mat | 45.0 |  Male  | 1 | 0 | 0 | ... |
 | ... | ... |  ...  | ... | ... | ... | ... |
 
-Note! There are attributes to be considered *before* running the script. Check the notebook [Introduction for Data Handling](/notebooks/1_introduction_data_handling.ipynb) for further instructions. 
+Note! There are attributes to be considered *before* running the script. Check the notebook [Introduction to data handling](/notebooks/1_introduction_data_handling.ipynb) for further instructions. 
 
 2) To train a model, you'll need to use either a yaml file or a directory as an argument and use one of the following commands
 
@@ -66,7 +66,7 @@ python train_model.py train_smoke.yaml
 python train_model.py train_stratified_smoke
 ```
 
-where `train_data.yaml` consists of needed arguments for the training in a yaml format, and `train_multiple_smoke` is a directory containing several yaml files. When using multiple yaml files at the same time, each yaml file is loaded and run separately. More detailed information about training is available in the notebook [Introductions for Training a Model](/notebooks/3_introductions_training.ipynb).
+where `train_data.yaml` consists of needed arguments for the training in a yaml format, and `train_multiple_smoke` is a directory containing several yaml files. When using multiple yaml files at the same time, each yaml file is loaded and run separately. More detailed information about training is available in the notebook [Introduction to training models](/notebooks/3_introduction_training.ipynb).
 
 3) To test and evaluate a trained model, you'll need one of the following commands
 
@@ -75,7 +75,7 @@ python test_model.py predict_smoke.yaml
 python test_model.py predict_stratified_smoke
 ```
 
-where `predict_smoke.yaml` consists of needed arguments for the prediction phase in a yaml format, and `predict_multiple_smoke` is a directory containing several yaml files. When using multiple yaml files at the same time, each yaml file is loaded and run separately. More detailed information about prediction and evaluation is available in the notebook [Introductions for Prediction and Evaluation](/notebooks/4_introductions_prediction_evaluation.ipynb).
+where `predict_smoke.yaml` consists of needed arguments for the prediction phase in a yaml format, and `predict_multiple_smoke` is a directory containing several yaml files. When using multiple yaml files at the same time, each yaml file is loaded and run separately. More detailed information about prediction and evaluation is available in the notebook [Introduction to testing and evaluating models](/notebooks/4_introduction_testing_evaluation.ipynb).
 
 
 # Repository in details
@@ -114,7 +114,7 @@ where `predict_smoke.yaml` consists of needed arguments for the prediction phase
 ├── LICENSE.txt
 ├── __init__.py
 ├── create_data_split_csvs.py    # Script to perform database-wise data split or 
-│                                  split by the cross-validatior Multilabel Stratified ShuffleSplit 
+│                                  split by the cross-validatior ´Multilabel Stratified ShuffleSplit´ 
 ├── preprocess_data_data.py      # Script for preprocessing data
 ├── README.md
 ├── requirements.txt             # The requirements needed to run the repository
