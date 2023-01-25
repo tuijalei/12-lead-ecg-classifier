@@ -72,9 +72,11 @@ class Predicting(object):
         history['test_micro_auroc'] = 0.0
         history['test_macro_avg_prec'] = 0.0
         history['test_macro_auroc'] = 0.0
+        history['test_challenge_metric'] = 0.0
         
         history['labels'] = self.args.labels
         history['test_csv'] = self.args.test_path
+        history['threshold'] = self.args.threshold
         
         start_time_sec = time.time()
  
@@ -128,7 +130,7 @@ class Predicting(object):
                 print('{:<4}/{:>4} predictions made'.format(i+1, len(self.test_dl)))
 
         # Predicting metrics
-        test_macro_avg_prec, test_micro_avg_prec, test_macro_auroc, test_micro_auroc, challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels, self.args.threshold)
+        test_macro_avg_prec, test_micro_avg_prec, test_macro_auroc, test_micro_auroc, test_challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels, self.args.threshold)
        
         
         print('macro avg prec: {:<6.2f} micro avg prec: {:<6.2f} macro auroc: {:<6.2f} micro auroc: {:<6.2f} challenge metric: {:<6.2f}'.format(
@@ -136,7 +138,7 @@ class Predicting(object):
             test_micro_avg_prec,
             test_macro_auroc,
             test_micro_auroc,
-            challenge_metric))
+            test_challenge_metric))
         
         # Draw ROC curve for predictions
         roc_curves(labels_all, logits_prob_all, self.args.labels, save_path = self.args.output_dir)
@@ -146,6 +148,7 @@ class Predicting(object):
         history['test_micro_avg_prec'] = test_micro_avg_prec
         history['test_macro_auroc'] = test_macro_auroc
         history['test_macro_avg_prec'] = test_macro_avg_prec
+        historu['test_challenge_metric'] = test_challenge_metric
         
         # Save the history
         history_savepath = os.path.join(self.args.output_dir,

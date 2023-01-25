@@ -12,7 +12,7 @@ def cal_multilabel_metrics(y_true, y_pre, labels, threshold=0.5):
     
     :param y_true: Actual class labels
     :type y_true: torch.Tensor
-    :param y_pre: Probability estimates of predicted labels
+    :param y_pre: Logits of predictions
     :type y_pre: torch.Tensor
     :param labels: Class labels used in the classification as SNOMED CT Codes
     :type labels: list
@@ -28,7 +28,7 @@ def cal_multilabel_metrics(y_true, y_pre, labels, threshold=0.5):
 
     pre_binary = np.zeros(pre_prob.shape, dtype=np.int32)
     
-    # Find the index of the maximum value within the probabilities
+    # Find the index of the maximum value within the logits
     likeliest_dx = np.argmax(pre_prob, axis=1)
 
     # First, add the most likeliest diagnosis to the predicted label
@@ -51,7 +51,7 @@ def cal_multilabel_metrics(y_true, y_pre, labels, threshold=0.5):
     micro_auroc = roc_auc_score(true_labels, pre_prob, average = 'micro')
     macro_auroc = roc_auc_score(true_labels, pre_prob, average = 'macro')
     
-    # -- PhysioNet Challenge score
+    # -- PhysioNet Challenge 2021 score
     challenge_metric = physionet_challenge_score(true_labels, pre_binary, cls_labels)
 
     return macro_avg_prec, micro_avg_prec, macro_auroc, micro_auroc, challenge_metric
@@ -104,7 +104,7 @@ def physionet_challenge_score(y_true, y_pre, labels):
         
     :param y_true: Actual class labels
     :type y_true: numpy.ndarray
-    :param y_pre: Predicted labels as binary
+    :param y_pre: One-hot-encoded predicted labels
     :type y_pre: numpy.ndarray
     :labels: Class labels used in the classification as SNOMED CT Codes
     :type labels: list

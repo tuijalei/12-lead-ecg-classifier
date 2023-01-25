@@ -1,6 +1,8 @@
 import os, sys
 import time
 import torch
+import pandas as pd
+import numpy as np
 from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader
@@ -33,6 +35,7 @@ class Training(object):
         training_set = ECGDataset(self.args.train_path, get_transforms('train'))
         validation_set = ECGDataset(self.args.val_path, get_transforms('val')) 
         channels = training_set.channels
+        self.validation_files = validation_set.data
               
         self.train_dl = DataLoader(training_set,
                                    batch_size=self.args.batch_size,
@@ -208,26 +211,40 @@ class Training(object):
             history['val_macro_auroc'].append(val_macro_auroc)  
             history['val_macro_avg_prec'].append(val_macro_avg_prec)
             history['val_challenge_metric'].append(val_challenge_metric)
-            
-            # Save trained model after all the epochs
+
+            # Save trained model (.pth), history (.pickle) and validation logits (.csv) after the last epoch
             if epoch == self.args.epochs:
                 
-                print('Saving the model...')
+                print('\nSaving the model, training history and validation logits...')
                     
                 # Whether or not you use data parallelism, save the state dictionary this way
                 # to have the flexibility to load the model any way you want to any device you want
                 model_state_dict = self.model.module.state_dict() if self.device_count > 1 else self.model.state_dict()
                     
-                # Save model
+                # -- Save model
                 model_savepath = os.path.join(self.args.model_save_dir,
                                               self.args.yaml_file_name + '.pth')
                 torch.save(model_state_dict, model_savepath)
                 
-                # Save history
+                # -- Save history
                 history_savepath = os.path.join(self.args.model_save_dir,
                                                 self.args.yaml_file_name + '_train_history.pickle')
                 with open(history_savepath, mode='wb') as file:
                     pickle.dump(history, file, protocol=pickle.HIGHEST_PROTOCOL)
+                    
+
+                # -- Save the logits from validation
+                logits_csv_path = os.path.join(self.args.model_save_dir,
+                                               self.args.yaml_file_name + '_val_logits.csv') 
+                
+                # Cleanup filenames to use as indexes
+                cleanup_filenames = [os.path.basename(file) for file in self.validation_files]
+                
+                # Save the logits as a csv file where columns are the labels and 
+                # indexes are the files which have been used in the validation phase
+                logits_numpy = logits_prob_all.cpu().detach().numpy().astype(np.float32)
+                logits_df = pd.DataFrame(logits_numpy, columns=self.args.labels, index=cleanup_filenames)
+                logits_df.to_csv(logits_csv_path, sep=',')
 
         torch.cuda.empty_cache()
           
