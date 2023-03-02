@@ -91,7 +91,7 @@ if __name__ == '__main__':
     # ----- Set the path here! -----
     
     # Root where the needed CSV file exists
-    csv_root = os.path.join(os.getcwd(), 'data', 'split_csvs', 'physionet_stratified_smoke')
+    csv_root = os.path.join(os.getcwd(), 'data', 'split_csvs', 'stratified_smoke')
     
     # ------------------------------
 

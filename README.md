@@ -37,15 +37,15 @@ Consider checking the `configs` directory for yaml configurations:
 * Yaml files in the `training` directory are used to train a model
 * Yaml files in the `predicting` directory are used to test and evaluate a model
 
-Two notebooks are available for creating training and testing yaml files based on the data splitting performed with the `create_data_split_csvs.py` script: [Yaml files of database-wise split for training and testing](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of stratified split for training and testing](/notebooks/2_physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
+Two notebooks are available for creating training and testing yaml files based on the data splitting performed with the `create_data_csvs.py` script: [Yaml files of database-wise split for training and testing](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of stratified split for training and testing](/notebooks/2_physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
 
 1) To split the data for the model to use in training and testing, you'll need the following command
 
 ```
-python create_data_split_csvs.py
+python create_data_csvs.py
 ```
 
-where `create_data_split_csvs.py` splits the data using either stratified split or database-wise split. On stratified run, `create_data_split_csvs.py` uses the implementation of `MultilabelStratifiedShuffleSplit` from `iterative-stratification` package. It makes csv files of the data splits which consists of a training set and a validation set. These csv files are later used in the training phase of the model, and have the columns `path` (path for ECG recording in .mat format), `age` , `gender` and all the diagnoses in SNOMED CT codes used as labels in the classification. Csv files of test data are also created. Database-wise split uses the structure of the directory where the data is loaded from.
+where `create_data_csvs.py` splits the data using either stratified split or database-wise split. On stratified run, `create_data_csvs.py` uses the implementation of `MultilabelStratifiedShuffleSplit` from `iterative-stratification` package. It makes csv files of the data splits which consists of a training set and a validation set. These csv files are later used in the training phase of the model, and have the columns `path` (path for ECG recording in .mat format), `age` , `gender` and all the diagnoses in SNOMED CT codes used as labels in the classification. Csv files of test data are also created. Database-wise split uses the structure of the directory where the data is loaded from.
 
 The main structure of csv files are as follows:
 
@@ -88,7 +88,8 @@ where `predict_smoke.yaml` consists of needed arguments for the prediction phase
 │   └── training                 # Yaml files considering the training phase
 │   
 ├── data
-│   ├── physionet_data_smoke     # Sample of The Physionet Challenge 2021 data for smoke testing
+│   ├── smoke_data               # Samples from the Physionet 2021 Challenge data as well as
+|   |                              Shandong Provincial Hospital data for smoke testing
 │   └── split_csvs               # Csv files of ECGs, either database-wise or stratified splitted
 │
 ├── notebooks                    # Jupyter notebooks for data exploration and 
@@ -113,9 +114,9 @@ where `predict_smoke.yaml` consists of needed arguments for the prediction phase
 ├── LICENSE
 ├── LICENSE.txt
 ├── __init__.py
-├── create_data_split_csvs.py    # Script to perform database-wise data split or 
-│                                  split by the cross-validatior ´Multilabel Stratified ShuffleSplit´ 
-├── preprocess_data_data.py      # Script for preprocessing data
+├── create_data_csvs.py          # Script to perform database-wise data split or split by
+│                                  the cross-validatior ´Multilabel Stratified ShuffleSplit´ 
+├── preprocess_data.py      # Script for preprocessing data
 ├── README.md
 ├── requirements.txt             # The requirements needed to run the repository
 ├── test_model.py                # Script to test and evaluate a trained model

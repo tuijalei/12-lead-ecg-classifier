@@ -1,88 +1,112 @@
-import os, sys
-import numpy as np
+import os, sys, re, h5py, shutil
+import pandas as pd
 from src.dataloader.transforms import Linear_interpolation, BandPassFilter
-from distutils.dir_util import copy_tree
-from scipy.io import loadmat, savemat
+from src.dataloader.dataset_utils import load_data
+from scipy.io import savemat
 
 '''
-With this script, the ECG data can be preprocessed before training.
+With this script, the ECG data can be preprocessed before training. Supported ECG formats
+are MATLAB v4 and h5, and metadata should be either in a header file or in a csv file.
 
-First, the directory tree of the original data location is copied into a different directory 
-so we keep the original data as it is and we can use created directories for data splitting, 
-training and testing.
-
-Second, all the ECGs and header files are paired and loaded directory by directory. The header 
-files are needed for sample frequency as different frequencies are used in the data.
-
-Third, the preprocessing is performed by default. Transforms are loaded from /src/dataloader/transforms.
+You can add your own transforms inside the "PREPROCESS TRANSFORMS" block. 
+By default the following transforms are used:
     - BandPassFilter: filters out certain frequencies that lie within a particular band or 
                       range of frequencies
     - Linear_interpolation : resamples the ECG using linear interpolation
                       
-Lastly, ECGs are saved. They need to be saved in mat format using dictionary with the key 'val'!
-The original versions are deleted and only preprocessed ECGs are left in the new directory.
-
-You are welcome to change the attributes `from_directory` and `new_directory` as you wish.
-
-    from_directory      Where to load the original (not preprocessed) data
+The following attributes should be considered: 
+    from_directory      Where to load the original (not preprocessed) data from
     new_directory       Where to save the preprocessed data
-    
-You can also add your own transforms inside the "PREPROCESS TRANSFORMS" block, where
-the two mentioned are located.
+
 '''
 
 # Original data location
-from_directory = os.path.join(os.getcwd(), 'data', 'physionet_data_smoke')
+from_directory = os.path.join(os.getcwd(), 'data', 'smoke_data')
+assert os.path.exists(from_directory), 'The data directory doesn´t exist.'
 
 # New location for preprocessed data
-new_directory = os.path.join(os.getcwd(), 'data', 'physionet_preprocessed_smoke')
+new_directory = os.path.join(os.getcwd(), 'data', 'preprocessed_smoke_data')
+
 if not os.path.exists(new_directory):
     os.makedirs(new_directory)
 
-print('Copying the directory tree...')
-# Copy the directory tree
-copy_tree(from_directory, new_directory)
+print('Gather all the filenames from the given directory into a dictionary...')
 
-# Subdirectories of the copied directory
-directories = [os.path.join(new_directory, dir_tmp) for dir_tmp in os.listdir(new_directory) if not dir_tmp.startswith('.')]
+# Initialize a dictionary with keys that are directory names in the given directory
+# If given one directory that includes files itself, have only this as a key
+more_than_one = len(next(os.walk(from_directory))[1]) > 0
+if more_than_one:
+    files = {}
+    # Also, create the subdirectories
+    for dname in os.listdir(from_directory):
+        prev_d = os.path.join(from_directory, dname)
+        new_d = os.path.join(new_directory, dname)
 
-mat_suffix = '.mat'
-hea_suffix = '.hea'
+        if os.path.isdir(prev_d) and not os.path.exists(new_d):
+            os.makedirs(new_d)
+
+        files[dname] = None
+else:
+    files = {os.path.basename(from_directory): None}
+
+# Gather the filenames into the dictionary
+for d in files.keys():
+    d_path = os.path.join(from_directory, d) if more_than_one else from_directory
+    filenames_tmp = [file for file in os.listdir(d_path)]
+    files[d] = filenames_tmp
+
+# File formats that are supported
+ecg_suffix = ['h5', 'mat'] # no dot in these!
+meta_suffix = ['csv', 'hea']
+
 # Iterate over directories and preprocess ECGs
-for dire in directories:
-    print('Opening {}...'.format(os.path.basename(dire)))
+for d, filenames in files.items():
+    print('Opening {}...'.format(os.path.basename(d)))
     
-    # Get all files - each recording has a MatLab file and a headerfile
-    mat_files = sorted([os.path.join(dire, file) for file in os.listdir(dire) if file.endswith(mat_suffix) and not 'preprocessed' in file])
-    hea_files = sorted([os.path.join(dire, file) for file in os.listdir(dire) if file.endswith(hea_suffix) and not 'preprocessed' in file])
+    # Absolute paths for the "old" and the new directories
+    prev_path = os.path.join(from_directory, d) if more_than_one else from_directory
+    new_path = os.path.join(new_directory, d) if more_than_one else new_directory
 
-    # There should be as many mat files as there are header files
-    assert(len(mat_files) == len(hea_files))
-    print('Found total of {} mat files and {} hea files'.format(len(mat_files), len(hea_files)))
+    # Get the absolute paths for ecgs and metadata
+    ecg_files = sorted([os.path.join(prev_path, file) for file in filenames if re.search('\w+$', file)[0] in ecg_suffix])
+    meta_files = sorted([os.path.join(prev_path, file) for file in filenames if re.search('\w+$', file)[0] in meta_suffix])
+    assert len(ecg_files) > 0 and len(meta_files) > 0, 'If there are ecg files, there should be metadata too.'
 
-    print('Making pairs of hea and mat files...')
-    # Similarly names files should be paired
-    mat_hea_pairs = []
-    for mat in mat_files:
-        mat_name = os.path.basename(mat).split('.')[0]
+    # If the metadata is csv file, needs to be loaded only once
+    if meta_files[0].endswith('csv'):
+        assert len(meta_files) == 1, 'There should be only one csv file found from which metadata is read!'
+        meta_df = pd.read_csv(meta_files[0])
 
-        for hea in hea_files:
-            hea_name = os.path.basename(hea).split('.')[0]
-            if hea_name == mat_name:
-                mat_hea_pairs.append((mat, hea))
-                break # If file found, no need to continue
+        # Create also a new copy to the new directory to which the preprocessed ECGs are saved
+        # Note, the names needs to be updated in the ECG_ID column
+        new_csv = meta_df.copy()
+        new_names = []
+        for name in ecg_files:
+            prev_name, suffix = os.path.splitext(os.path.basename(name))
+            new_names.append(prev_name + '_preprocessed' + suffix)
 
-    print('Preprocessing {} ECGs...'.format(len(mat_hea_pairs)))
-    # Iterate over mat and hea files and perform preprocessing
-    for i, (mat, hea) in enumerate(mat_hea_pairs):
+        new_csv['ECG_ID'] = new_names
+        new_csv.to_csv(os.path.join(new_path, os.path.basename(meta_files[0])), index=None, sep=',')
 
-        # Get fs from header file
-        with open(hea, 'r') as f:
-            ecg_fs = int(f.readlines()[0].split(' ')[2])
+    print('Preprocessing {} ECGs...'.format(len(ecg_files)))
+    # Iterate over ecg recordings and preprocess them
+    for i, ecg_name in enumerate(ecg_files[0:10]):
+
+        # Sample frequency is either in a csv file or in a hea file
+        if meta_files[0].endswith('.hea'):
+            # Doublecheck the naming of hea and mat files as they should match
+            assert re.search('^\w+', os.path.basename(ecg_name))[0] == re.search('^\w+', os.path.basename(meta_files[i]))[0], 'Hea and mat files should have similar names!'
+            with open(meta_files[i], 'r') as f:
+                ecg_fs = int(f.readlines()[0].split(' ')[2])
+        else:
+            # Double check that we have the metadata of the spesific ECG samples
+            # i.e. it needs to be found in the ECG_ID column
+            assert os.path.basename(ecg_name) in meta_df['ECG_ID'].values, 'The name of the ECG recording not found in metadata!'
+            row_idx = meta_df.index[meta_df['ECG_ID'] == os.path.basename(ecg_name)]
+            ecg_fs = int(meta_df.loc[row_idx, 'fs'])
 
         # Load ECG
-        ecg = loadmat(mat)
-        ecg = np.asarray(ecg['val'], dtype=np.float64)
+        ecg = load_data(ecg_name)
 
         # ------------------------------
         # --- PREPROCESS TRANSFORMS ----
@@ -98,21 +122,32 @@ for dire in directories:
         # ------------------------------
         # ------------------------------
 
-        # Since no need for the original ECG to exists in the 'preprocessed' directory
-        # let's delete it
-        os.remove(mat)
-        
-        # Save preprocessed ECG using dictionary with the key 'val'
-        ecg_dict = {'val': ecg}
-        ecg_name = os.path.splitext(mat)[0] + '_preprocessed.mat'
-        savemat(ecg_name, ecg_dict)
-         
-        # We need a header file to have the same name as ECG so let's change it
-        hea_name = os.path.splitext(hea)[0] + '_preprocessed.hea'
-        os.rename(hea, hea_name)
+        prev_name, suffix = os.path.splitext(os.path.basename(ecg_name))
+        new_name = os.path.join(new_path, prev_name + '_preprocessed' + suffix)
 
+        # If ECG is a .mat file, use the savemat function
+        if ecg_name.endswith('.mat'):
+            
+            # Using dictionary with the 'val' key
+            ecg_dict = {'val': ecg}
+            savemat(new_name, ecg_dict)
+
+            # We need the header file in the same location and 
+            # to have a similar name so let's create one
+            prev_name, suffix = os.path.splitext(os.path.basename(meta_files[i]))
+            new_hea = os.path.join(new_path, prev_name + '_preprocessed' + suffix)
+
+            # Doublecheck the names to be sure that same hea file is copied
+            assert re.search('\D+\d+', os.path.basename(meta_files[i]))[0] == re.search('\D+\d+', os.path.basename(new_hea))[0], 'Hea files should have similar names except `_preprocessed` part!'
+            shutil.copy(meta_files[i], new_hea)
+
+        else:
+            # H5 files had a key named ´ecg´ to where to store the preprocessed ECG
+            with h5py.File(new_name, 'w') as f:
+                f['ecg'] = ecg
+        
         if i % 1000 == 0:
-            print('{}/{} ECGs preprocessed'.format(i+1, len(mat_hea_pairs)))
+            print('{:^8}/{:^8} ECGs preprocessed'.format(i+1, len(ecg_files)))
     
     print('-'*20)
 

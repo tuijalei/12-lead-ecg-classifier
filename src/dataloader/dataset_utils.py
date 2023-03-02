@@ -1,13 +1,19 @@
 from scipy.io import loadmat
-from scipy.interpolate import interp1d
 import numpy as np
-import pandas as pd
+import sys, h5py
 
 def load_data(case):
-    ''' Load a MATLAB v4 file of an ECG recording
+    ''' Load a MATLAB v4 file or a H5 file of an ECG recording
     '''
-    x = loadmat(case)
-    return np.asarray(x['val'], dtype=np.float64)
+
+    if case.endswith('.mat'):
+        x = loadmat(case)
+        return np.asarray(x['val'], dtype=np.float64)
+    else:
+        with h5py.File(case) as f:
+            x = f['ecg'][()]
+        return np.asarray(x, dtype=np.float64)
+
    
 
 def encode_metadata(age, gender):
@@ -30,9 +36,9 @@ def encode_metadata(age, gender):
     if age >= 0:
         ag_data[0] = age / 100
       
-    if gender == 'Female' or gender == 'female':
+    if gender == 'Female' or gender == 'female' or gender == 'F' or gender == 'f':
         ag_data[1] = 1
-    elif gender == 'Male' or gender == 'male':
+    elif gender == 'Male' or gender == 'male' or gender == 'M' or gender == 'm':
         ag_data[2] = 1
 
     return ag_data
