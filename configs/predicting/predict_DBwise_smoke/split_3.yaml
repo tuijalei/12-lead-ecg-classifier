@@ -1,9 +1,0 @@
-# INITIAL SETTINGS
-test_file: CPSC_CPSC-Extra.csv
-model: split_3.pth
-
-# TESTING SETTINGS
-threshold: 0.500000
-
-# DEVICE CONFIGS
-device_count: 1
