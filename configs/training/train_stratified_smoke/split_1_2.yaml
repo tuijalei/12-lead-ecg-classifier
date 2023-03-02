@@ -5,11 +5,11 @@ val_file: val_split_1_2.csv
 # TRAINING SETTINGS
 batch_size: 10
 num_workers: 0
-epochs: 5
+epochs: 1
 lr: 0.003000
 weight_decay: 0.000010
 
-# TESTING SETTINGS
+# VALIDATION SETTINGS
 threshold: 0.500000
 
 # DEVICE CONFIGS
