@@ -6,10 +6,9 @@ __pycache__/
 
 # Ignore everything in the data directory except smoke data and related csv files
 data/*
-!data/split_csvs/*
-#!data/smoke_data/
-#!data/split_csvs/stratified_smoke/test_split_1.csv
-#!data/split_csvs/stratified_smoke/train_split_1_1.csv
+!data/smoke_data/
+!data/split_csvs/stratified_smoke/test_split_1.csv
+!data/split_csvs/stratified_smoke/train_split_1_1.csv
 !data/split_csvs/stratified_smoke/train_split_1_2.csv
 !data/split_csvs/stratified_smoke/train_split_1_3.csv
 !data/split_csvs/stratified_smoke/train_split_1_4.csv
