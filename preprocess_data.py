@@ -70,9 +70,9 @@ for d, filenames in files.items():
     # Get the absolute paths for ecgs and metadata
     ecg_files = sorted([os.path.join(prev_path, file) for file in filenames if re.search('\w+$', file)[0] in ecg_suffix])
     meta_files = sorted([os.path.join(prev_path, file) for file in filenames if re.search('\w+$', file)[0] in meta_suffix])
-    assert len(ecg_files) > 0 and len(meta_files) > 0, 'If there are ecg files, there should be metadata too.'
+    assert len(ecg_files) > 0 and len(meta_files) > 0, 'If there are ecg files, there should be metadata too. Check if metadata found in the same location than ECGs!'
 
-    # If the metadata is csv file, needs to be loaded only once
+    # If the metadata is in a csv file, needs to be loaded only once
     if meta_files[0].endswith('csv'):
         assert len(meta_files) == 1, 'There should be only one csv file found from which metadata is read!'
         meta_df = pd.read_csv(meta_files[0])
@@ -82,15 +82,15 @@ for d, filenames in files.items():
         new_csv = meta_df.copy()
         new_names = []
         for name in ecg_files:
-            prev_name, suffix = os.path.splitext(os.path.basename(name))
-            new_names.append(prev_name + '_preprocessed' + suffix)
+            prev_name, _ = os.path.splitext(os.path.basename(name))
+            new_names.append(prev_name + '_preprocessed')
 
         new_csv['ECG_ID'] = new_names
         new_csv.to_csv(os.path.join(new_path, os.path.basename(meta_files[0])), index=None, sep=',')
 
     print('Preprocessing {} ECGs...'.format(len(ecg_files)))
     # Iterate over ecg recordings and preprocess them
-    for i, ecg_name in enumerate(ecg_files[0:10]):
+    for i, ecg_name in enumerate(ecg_files):
 
         # Sample frequency is either in a csv file or in a hea file
         if meta_files[0].endswith('.hea'):
@@ -101,8 +101,8 @@ for d, filenames in files.items():
         else:
             # Double check that we have the metadata of the spesific ECG samples
             # i.e. it needs to be found in the ECG_ID column
-            assert os.path.basename(ecg_name) in meta_df['ECG_ID'].values, 'The name of the ECG recording not found in metadata!'
-            row_idx = meta_df.index[meta_df['ECG_ID'] == os.path.basename(ecg_name)]
+            assert re.search('^\w+', os.path.basename(ecg_name))[0] in meta_df['ECG_ID'].values, 'The name of the ECG recording not found in metadata!'
+            row_idx = meta_df.index[meta_df['ECG_ID'] == re.search('^\w+', os.path.basename(ecg_name))[0]]
             ecg_fs = int(meta_df.loc[row_idx, 'fs'])
 
         # Load ECG

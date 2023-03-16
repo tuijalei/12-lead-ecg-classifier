@@ -1,4 +1,4 @@
-import os, sys, glob
+import os, sys, glob, re
 import numpy as np
 import pandas as pd
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
@@ -57,10 +57,7 @@ def read_metacsv(CT_codes_all, files, columns, metacsv):
     for file in files:
 
         # The basename of the file
-        file_name = os.path.basename(file)
-
-        # Gather all information to a dictionary
-        metadata_dict = {key: None for key in columns}
+        file_name = re.search('\w+', os.path.basename(file))[0]
         
         # ECG id should be found in the csv file: Check if the given file is named there
         if file_name in metacsv_df['ECG_ID'].values:
@@ -69,12 +66,15 @@ def read_metacsv(CT_codes_all, files, columns, metacsv):
             row_idx = metacsv_df.index[metacsv_df['ECG_ID'] == file_name].tolist()
             
             # Find the diagnoses of the given file
-            dx = metacsv_df.loc[row_idx, 'Dx'].values[0]
-            dx = [c.strip() for c in dx.split(',')]
+            dx = metacsv_df.loc[row_idx, 'SNOMEDCTCode'].values
+            dx = [c.strip() for c in dx[0].split(',')] if not pd.isna(dx) else None
 
             # Check whether the diagnoses are included within SNOMED CT Codes
             # If yes, gather the metadata
-            if bool(set.intersection(set(dx), set(CT_codes_all))):
+            if not dx == None and bool(set.intersection(set(dx), set(CT_codes_all))):
+
+                # Gather all information to a dictionary
+                metadata_dict = {key: None for key in columns}
                 
                 # Mark diagnoses that are found with the value of 1 in the corresponding column
                 for code in dx:
@@ -107,7 +107,7 @@ def read_metacsv(CT_codes_all, files, columns, metacsv):
                 else:
                     metadata_dict['gender'] = str(gender)
 
-            metadata_rows.append(metadata_dict) 
+                metadata_rows.append(metadata_dict) 
 
     return metadata_rows
 
@@ -138,9 +138,6 @@ def read_headerfiles(CT_codes_all, files, columns):
         # Each ECG mat file should have a corresponding hea file
         input_file_name = file.replace('.mat', '.hea')
 
-        # Gather all information to a dictionary
-        metadata_dict = {key: None for key in columns}
-
         # Flag to mark if diagnoses in a file found from the SNOMED CT Codes used as labels
         labels_found = False
 
@@ -163,6 +160,9 @@ def read_headerfiles(CT_codes_all, files, columns):
             # If the diagnoses that are used as labels are found,
             # we need to gather the metadata from the header file
             if labels_found:
+
+                # Gather all information to a dictionary
+                metadata_dict = {key: None for key in columns}
 
                 # Mark diagnoses that are found with the value of 1 in the corresponding column
                 for code in dx:
@@ -439,7 +439,7 @@ if __name__ == '__main__':
     # ----- WHICH DATA SPLIT DO YOU WANT TO USE WHEN CREATING CSV FILES?
     # Database-wise split :: stratified = False
     # Stratified split :: stratified = True
-    stratified = True
+    stratified = False
     
     # ----- WHERE TO LOAD THE ECGS FROM - give the name of the data directory
     # Note that the root for this is the 'data' dictionary
@@ -447,7 +447,7 @@ if __name__ == '__main__':
     
     # ----- WHERE TO SAVE THE CSV FILES - give a name for the new directory
     # Note that the root for this is the 'data/split_csv/' directory
-    csv_dir = 'stratified_smoke'
+    csv_dir = 'dbwise_smoke'
 
     # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 
     labels = ['426783006', '426177001', '427084000', '164890007', '164889003', '427393009']
