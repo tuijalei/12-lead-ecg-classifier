@@ -1,4 +1,4 @@
-import os, re
+import os, re, sys
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -212,12 +212,19 @@ if __name__ == '__main__':
     label_map = pd.read_csv(map_path, sep=',')
 
     # Found the corresponding labels from another diagnosis coding system
+    print('Converting AHA codes to SNOMED CT ones...')
     sph_metadata = label_mapping(sph_metadata, from_code, to_code)
+    
+    # Drop the rows that doesn't contain neither SNOMED CT Code or '-1' (normal ecg label)
+    sph_metadata = sph_metadata.dropna()
+    sph_metadata = sph_metadata.reset_index(drop=True)
 
     # Impute the sinus rhythm if necessary
     if bool(imputation):
+        print('Performing imputation of the SR labels...')
         
         # Load the Physionet data
+        print('Loading the Physionet Challenge 2021 data...')
         input_dir = os.path.join(os.getcwd(), 'data', 'smoke_data')
         physionet_heas = find_headerfiles(input_dir)
         physionet_data = physionet_metadata(physionet_heas)
@@ -233,18 +240,21 @@ if __name__ == '__main__':
         physio_features = physio_feature_matrix.drop([sinus_rhythm], axis = 1)
 
         # =========== IMPUTATION OF SR LABELS ===========
+        print('Fitting the Logistic Regression model with the Physionet metadata...')
 
         # Fit a logistic regression model
         logreg = LogisticRegression(C=0.01, max_iter=1000).fit(physio_features, physio_labels)
 
         # Predict SR labels for the SPH data
         # First, make the feature matrix out of the SPH metadata
+        print('Predicting SR labels for the SPH data...')
         sph_feature_matrix = feature_matrix(sph_metadata, labels).drop([sinus_rhythm], axis = 1)
         sr_predictions = logreg.predict(sph_feature_matrix)
 
         # Store the predicted SR labels in the SPH metadata
         sph_metadata['SR'] = sr_predictions
 
+        print('Converting SR predictions into SNOMED CT Codes...')
         # Lastly, add SNOMED CT Code of the sinus rhythm along the other SNOMED CT Codes to the SPH data
         for index, values in sph_metadata.iterrows():
 
@@ -259,4 +269,6 @@ if __name__ == '__main__':
 
 
     # Save the updated csv file
-    sph_metadata.to_csv(csv_path, index=False)
+    sph_metadata.to_csv('test.csv', index=False)
+
+    print('Done.')
