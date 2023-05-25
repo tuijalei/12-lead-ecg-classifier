@@ -1,66 +1,24 @@
-﻿Rhythm;AHA_Code;SNOMEDCTCode
-Sinus Rhythm;1;426783006
-Atrial Fibrillation ;50;164889003
-Atrial Fibrillation ;346;164889003
-Atrial Fibrillation ;347;164889003
-Atrial Flutter;51;164890007
-Premature Atrial complexes(conducting and non-conducting);30;284470004
-Premature Atrial complexes(conducting and non-conducting);308;284470004
-Premature Atrial complexes(conducting and non-conducting);310;284470004
-Premature Atrial complexes(conducting and non-conducting);340;284470004
-Supraventricular Premature beats;31;63593006
-Supraventricular Premature beats;36;
-Supraventricular Premature beats;37;
-Sinus Tachycardia;21;427084000
-Sinus Bradycardia;22;426177001
-Sinus Arrthymia;23;427393009
-Premature Ventricular Contractions;60;427172004
-Premature Ventricular Contractions;308;427172004
-Premature Ventricular Contractions;310;427172004
-Premature Ventricular Contractions;340;427172004
-Premature Ventricular Contractions;341;427172004
-Premature Ventricular Contractions;342;427172004
-Premature Ventricular Contractions;350;427172004
-Short PR interval;11;
-PR prolongation;82;164947007
-1st degree heart block;82;270492004
-Second degree heart block (Wenckebach);83;
-Second degree heart blocks (Mobitz Type 2);84;
-2:1 AV block;85;
-AV block, varying conduction;86;
-AV block, advanced (high-grade);87;
-AV block, complete (third-degree);88;
-Left anterior fascicular block;101;445118002
-Left posterior fascicular block;102;164909002
-complete left bundle branch block;104;733534002
-Incomplete right bundle-branch block;105;713426002
-Right bundle-branch block;106;713427006
-Bundle Branch Block;106;6374002
-Ventricular pre-excitation;108;
-Right-axis deviation;120;47665007
-Left-axis deviation;121;39732003
-Low voltage;125;251146004
-ST deviation;145;
-ST deviation;362;
-ST deviation;363;
-ST deviation with T-wave change;146;
-T-wave abnormal;147;164934002
-T-wave inversion;367;59931005
-Prolonged QT interval;148;111975006
-TU fusion/ U wave;152;
-ST-T change due to ventricular hypertrophy;153;
-Early repolarization;155;
-Q wave abnormal ;332;164917005
-Left atrial enlargement;140;
-Left ventricular hypertrophy;142;
-Right ventricular hypertrophy;143;
-Anterior MI;160;
-Anterior MI;330;
-Inferior MI;161;
-Inferior MI;330;
-Antero-septal MI;165;
-Antero-septal MI;330;
-Extensive MI;166;
-Recent MI ;331;
-Paced Rhythm;;10370003
-Poor R wave progression;;365413008
+﻿Dx,SNOMEDCTCode,AHA_Code
+1st degree av block,270492004,82
+atrial fibrillation,164889003,50
+atrial fibrillation,164889003,50+346
+atrial fibrillation,164889003,50+347
+atrial flutter,164890007,51
+incomplete right bundle branch block,713426002,105
+left anterior fascicular block,445118002,101
+left axis deviation,39732003,121
+left bundle branch block,164909002,104
+low qrs voltages,251146004,125
+premature atrial contraction,284470004,30
+premature atrial contraction,284470004,30+308
+premature atrial contraction,284470004,30+310
+premature atrial contraction,284470004,30+340
+premature atrial contraction,284470004,30+341
+premature atrial contraction,284470004,30+349
+right axis deviation,47665007,120
+right bundle branch block,59118001,106
+sinus arrhythmia,427393009,23
+sinus bradycardia,426177001,22
+sinus tachycardia,427084000,21
+t wave abnormal,164934002,147
+t wave inversion,59931005,147+367

@@ -31,6 +31,49 @@ def lsdir(data_dir):
         
     return file_list
 
+def diagnosis_mapping(diagnoses, CT_codes_all, metadata_dict):
+    '''Do the diagnosis mapping, i.e., mark diagnoses that are found with the value of 1 to the corresponding column.
+    Also, mark the diagnoses that are not found, with the value of 0. 
+
+    With this function, merging several labels into one can also be performed.
+
+    :param diagnoses: Found diagnoses
+    :param CT_codes_all: List of all the SNOMED CT codes for the 
+                         diagnoses included in the classification
+    :param metadata_dict: Dictionary to which the labels will be mapped
+
+    :return: metadata_dict: Dictionary filled with mapped diagnoses
+    :rtype: dictionary
+    '''
+
+    for code in diagnoses:
+
+        # == Merge different labels into one ==
+
+        # There might be situation where we want to merge some labels into one "parent" label,
+        # e.g. all "prolonged pr interval" will be merged to "1st degree heart block" (Physionet mapping)
+        prolonged_pr_snomed = '164947007'
+        first_degree_hb_snomed = '270492004'
+
+        if str(code) == prolonged_pr_snomed:
+            if code in CT_codes_all:
+                metadata_dict[first_degree_hb_snomed] = 1
+                continue # No need for double mapping
+
+        # -> Only "1st degree HB" is labeled with 1, NOT "prolonged PR interval"
+        # =============================================
+
+        # Map found codes with the value of 1
+        if code in CT_codes_all:
+            metadata_dict[code] = 1
+
+    # Add zero to all other diagnoses
+    for key in metadata_dict.keys():
+        if not metadata_dict[key]:
+            metadata_dict[key] = 0
+
+    return metadata_dict
+
 
 def read_metacsv(CT_codes_all, files, columns, metacsv):
     '''Find information of age, gender, sample frequency and diagnoses from
@@ -54,10 +97,12 @@ def read_metacsv(CT_codes_all, files, columns, metacsv):
     # Read the metadata from the given csv file
     metacsv_df = pd.read_csv(metacsv)
 
+    assert 'SNOMEDCTCode' in metacsv_df, 'The SNOMEDCTCode column not found or misspelled: Map the labels or fix the column name!'
+
     for file in files:
 
         # The basename of the file
-        file_name = re.search('\w+', os.path.basename(file))[0]
+        file_name = re.search('\w+.*', os.path.basename(file))[0]
         
         # ECG id should be found in the csv file: Check if the given file is named there
         if file_name in metacsv_df['ECG_ID'].values:
@@ -76,15 +121,8 @@ def read_metacsv(CT_codes_all, files, columns, metacsv):
                 # Gather all information to a dictionary
                 metadata_dict = {key: None for key in columns}
                 
-                # Mark diagnoses that are found with the value of 1 in the corresponding column
-                for code in dx:
-                    if code in CT_codes_all:
-                        metadata_dict[code] = 1
-                
-                # Add zero to all other diagnoses
-                for key in metadata_dict.keys():
-                    if not metadata_dict[key]:
-                        metadata_dict[key] = 0
+                # Map the diagnosis labels
+                metadata_dict = diagnosis_mapping(dx, CT_codes_all, metadata_dict)
 
                 # Add a path of the file
                 metadata_dict['path'] = file
@@ -164,15 +202,8 @@ def read_headerfiles(CT_codes_all, files, columns):
                 # Gather all information to a dictionary
                 metadata_dict = {key: None for key in columns}
 
-                # Mark diagnoses that are found with the value of 1 in the corresponding column
-                for code in dx:
-                    if code in CT_codes_all:
-                        metadata_dict[code] = 1
-
-                # Add zero to all other diagnoses
-                for key in metadata_dict.keys():
-                    if not metadata_dict[key]:
-                        metadata_dict[key] = 0
+                # Map the diagnosis labels
+                metadata_dict = diagnosis_mapping(dx, CT_codes_all, metadata_dict)
  
                 # Move back to the beginning of the file
                 f.seek(0)
@@ -374,9 +405,6 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits):
         # All the training files as a list of lists: can be .mat or .h5 files
         train_files = [lsdir(os.path.join(data_directory, db_path)) for db_path in train_data]
 
-        # The train_files variable should be a list-of-lists, but if not, convert it
-        train_files = train_files if len(train_files) > 1 else [train_files]
-
         # Putting all the ECGs into a dataframe: first, create an empty one
         column_names = ['path', 'age', 'gender', 'fs'] + labels
         
@@ -420,6 +448,16 @@ if __name__ == '__main__':
     ''' The scipt to create csv files for training and testing.
     Note that with this script, you make the decision about the labels
     which you want to use in classification.
+
+    Csv files will have the following structure:
+
+    
+           path       | age  | gender | 10370003 | 111975006 | 164890007 | *other diagnoses...* 
+     ---------------- |------|--------| ---------|-----------|-----------|----------------------
+     ./Data/A0002.mat | 49.0 | Female |     0    |     0     |      1    |     ...      
+     ./Data/A0003.mat | 81.0 | Female |     1    |     0     |      0    |     ...   
+     ./Data/A0004.mat | 45.0 |  Male  |     0    |     1     |      1    |     ...   
+           ...        | ...  |  ...   |   ...    |    ...    |    ...    |     ...   
     
     Consider the following parameters:
     ------------------------------------------
@@ -439,7 +477,7 @@ if __name__ == '__main__':
     # ----- WHICH DATA SPLIT DO YOU WANT TO USE WHEN CREATING CSV FILES?
     # Database-wise split :: stratified = False
     # Stratified split :: stratified = True
-    stratified = False
+    stratified = True
     
     # ----- WHERE TO LOAD THE ECGS FROM - give the name of the data directory
     # Note that the root for this is the 'data' dictionary
@@ -447,10 +485,11 @@ if __name__ == '__main__':
     
     # ----- WHERE TO SAVE THE CSV FILES - give a name for the new directory
     # Note that the root for this is the 'data/split_csv/' directory
-    csv_dir = 'dbwise_smoke'
+    csv_dir = 'stratified_smoke_csv'
 
     # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 
-    labels = ['426783006', '426177001', '427084000', '164890007', '164889003', '427393009']
+    # Note that we also need labels which we will merge to another labels
+    labels = ['426783006', '426177001', '427084000', '164890007', '164889003', '427393009', '164947007', '270492004']
    
     # -----------------------------------------------------------------------
     # ----- STRATIFIED DATA SPLIT
@@ -466,7 +505,7 @@ if __name__ == '__main__':
         # The other splits are represented later in comments
         train_test_splits = {
             'split_1': {    
-                'train': ['G12EC', 'Shandong', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
+                'train': ['G12EC', 'Shandong'],
                 'test': 'CPSC_CPSC-Extra'
             }
         }
