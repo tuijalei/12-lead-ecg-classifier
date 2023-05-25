@@ -71,8 +71,8 @@ where `train_data.yaml` consists of needed arguments for the training in a yaml 
 3) To test and evaluate a trained model, you'll need one of the following commands
 
 ```
-python test_model.py predict_smoke.yaml
-python test_model.py predict_stratified_smoke
+python run_model.py predict_smoke.yaml
+python run_model.py predict_stratified_smoke
 ```
 
 where `predict_smoke.yaml` consists of needed arguments for the prediction phase in a yaml format, and `predict_multiple_smoke` is a directory containing several yaml files. When using multiple yaml files at the same time, each yaml file is loaded and run separately. More detailed information about prediction and evaluation is available in the notebook [Introduction to testing and evaluating models](/notebooks/4_introduction_testing_evaluation.ipynb).
@@ -120,7 +120,7 @@ where `predict_smoke.yaml` consists of needed arguments for the prediction phase
 ├── preprocess_data.py           # Script for preprocessing data
 ├── README.md
 ├── requirements.txt             # The requirements needed to run the repository
-├── test_model.py                # Script to test and evaluate a trained model
+├── run_model.py                # Script to test and evaluate a trained model
 ├── train_model.py               # Script to train a model
 └── utils.py                     # Script for yaml configuration
 
