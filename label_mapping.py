@@ -179,7 +179,7 @@ if __name__ == '__main__':
     '''
 
     # ---- CSV FILE OF THE METADATA
-    csv_path = os.path.join(os.getcwd(), 'data', 'smoke_data', 'Shandong', 'metadata.csv')
+    csv_path = os.path.join(os.getcwd(), 'data', 'smoke_data', 'SPH', 'metadata.csv')
 
     # ---- CSV FILE OF LABEL MAPPING
     map_path = os.path.join(os.getcwd(), 'data', 'AHA_SNOMED_mapping.csv')
@@ -196,6 +196,9 @@ if __name__ == '__main__':
     sinus_rhythm = '426783006'
     labels = [sinus_rhythm, '426177001', '164934002', '427393009', '713426002', '427084000', '59118001', '164889003', '59931005', \
               '47665007', '445118002', '39732003', '164890007', '164909002', '270492004', '251146004', '284470004']
+    
+    # --- Which directory to use to train the Logistic Regression model for the imputation
+    input_dir = os.path.join(os.getcwd(), 'data', 'smoke_data')
     
     # -------------------------------------------------------------------------------
 
@@ -225,7 +228,6 @@ if __name__ == '__main__':
         
         # Load the Physionet data
         print('Loading the Physionet Challenge 2021 data...')
-        input_dir = os.path.join(os.getcwd(), 'data', 'smoke_data')
         physionet_heas = find_headerfiles(input_dir)
         physionet_data = physionet_metadata(physionet_heas)
 
@@ -254,21 +256,23 @@ if __name__ == '__main__':
         # Store the predicted SR labels in the SPH metadata
         sph_metadata['SR'] = sr_predictions
 
+        # Lastly, add SNOMED CT Code of the SR along the other SNOMED CT Codes to the SPH data if SR predicted
         print('Converting SR predictions into SNOMED CT Codes...')
-        # Lastly, add SNOMED CT Code of the sinus rhythm along the other SNOMED CT Codes to the SPH data
         for index, values in sph_metadata.iterrows():
 
-            snomeds = str(values['SNOMEDCTCode'])
-            
-            if snomeds == '-1': # map normal ecgs
-                sph_metadata.loc[index, 'SNOMEDCTCode'] = sinus_rhythm
+            if values['SR'] == 1:
+
+                snomeds = str(values['SNOMEDCTCode'])
                 
-            else: # map everything else
-                snomeds = snomeds + ',' + str(sinus_rhythm)
-                sph_metadata.loc[index, 'SNOMEDCTCode'] = snomeds
+                if snomeds == '-1': # map normal ecgs
+                    sph_metadata.loc[index, 'SNOMEDCTCode'] = sinus_rhythm
+                    
+                else: # map everything else
+                    snomeds = snomeds + ',' + str(sinus_rhythm)
+                    sph_metadata.loc[index, 'SNOMEDCTCode'] = snomeds
 
 
     # Save the updated csv file
-    sph_metadata.to_csv('test.csv', index=False)
+    sph_metadata.to_csv(csv_path, index=False)
 
     print('Done.')

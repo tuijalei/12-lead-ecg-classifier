@@ -274,7 +274,13 @@ def gather_metadata(files, labels, column_names):
     
     # Flatten a list-of-dictionaries to convert one dictionary to dataframe
     ecg_rows = [dct for dict_lst in ecg_rows for dct in dict_lst]
-    return pd.DataFrame(ecg_rows)
+    ecg_df = pd.DataFrame(ecg_rows)
+
+    # Drop the merged labels
+    merged_labels = ['164947007']
+    ecg_df = ecg_df.drop(columns=merged_labels)
+
+    return ecg_df
 
 def stratified_shuffle_split(df, labels, n_split):
     ''' Splitting the data into training and validation sets
@@ -481,15 +487,16 @@ if __name__ == '__main__':
     
     # ----- WHERE TO LOAD THE ECGS FROM - give the name of the data directory
     # Note that the root for this is the 'data' dictionary
-    data_dir = 'preprocessed_smoke_data'
+    data_dir = 'smoke_data'
     
     # ----- WHERE TO SAVE THE CSV FILES - give a name for the new directory
     # Note that the root for this is the 'data/split_csv/' directory
-    csv_dir = 'stratified_smoke_csv'
+    csv_dir = 'stratified_smoke'
 
     # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 
     # Note that we also need labels which we will merge to another labels
-    labels = ['426783006', '426177001', '427084000', '164890007', '164889003', '427393009', '164947007', '270492004']
+    labels = ['426783006', '426177001', '164934002', '427393009', '713426002', '427084000', '59118001', '164889003', '59931005', \
+              '47665007', '445118002', '39732003', '164890007', '164909002', '270492004', '164947007', '251146004', '284470004']
    
     # -----------------------------------------------------------------------
     # ----- STRATIFIED DATA SPLIT
@@ -505,8 +512,8 @@ if __name__ == '__main__':
         # The other splits are represented later in comments
         train_test_splits = {
             'split_1': {    
-                'train': ['G12EC', 'Shandong'],
-                'test': 'CPSC_CPSC-Extra'
+            'train': ['G12EC', 'SPH', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
+            'test': 'CPSC_CPSC-Extra'
             }
         }
 
