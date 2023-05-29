@@ -4,8 +4,6 @@ import torch
 import pandas as pd
 import matplotlib.pyplot as plt
 import os, sys
-import pickle
-
  
 def cal_multilabel_metrics(y_true, y_pre, labels, threshold=0.5):
     ''' Compute micro/macro AUROC and AUPRC
@@ -20,14 +18,55 @@ def cal_multilabel_metrics(y_true, y_pre, labels, threshold=0.5):
     :return: wanted metrics
     :rtypes: float
     '''
-    
+
     # Convert tensors to numpy and filter out empty classes
-    true_labels, pre_prob, cls_labels = preprocess_labels(y_true, y_pre, labels)
+    true_labels, pre_prob, _, cls_labels = preprocess_labels(y_true, y_pre, labels, threshold)
+
+    # ---------------- Wanted metrics ----------------
+
+    # -- Average precision score
+    macro_avg_prec = average_precision_score(true_labels, pre_prob, average = 'macro')
+    micro_avg_prec = average_precision_score(true_labels, pre_prob, average = 'micro')
     
-    # -------- One-hot-endcode predicted labels --------
+    # -- AUROC score
+    micro_auroc = roc_auc_score(true_labels, pre_prob, average = 'micro')
+    macro_auroc = roc_auc_score(true_labels, pre_prob, average = 'macro')
+    
+    # -- PhysioNet Challenge 2021 score
+    
+    # Need all the labels
+    true_labels, _, binary_outputs, cls_labels = preprocess_labels(y_true, y_pre, labels, threshold, drop_missing=False)
+    challenge_metric = physionet_challenge_score(true_labels, binary_outputs, cls_labels)
+
+    return macro_avg_prec, micro_avg_prec, macro_auroc, micro_auroc, challenge_metric
+
+    
+def preprocess_labels(y_true, y_pre, labels, threshold = 0.5, drop_missing = True):
+    ''' Convert tensor variables to numpy and check the positive class labels. 
+    If there's none, leave the columns out from actual labels, binary predictions,
+    logits and class labels used in the classification.
+    
+    :param y_true: Actual class labels
+    :type y_true: torch.Tensor
+    :param y_pre: Logits of predicted labels
+    :type y_pre: torch.Tensor
+    
+    :return true_labels, pre_prob, pre_binary, labels: Converted (and possibly filtered) actual labels,
+                                                       binary predictions and logits
+
+    :rtype: numpy.ndarrays
+    '''
+
+    # Actual labels from tensor to numpy
+    true_labels = y_true.cpu().detach().numpy().astype(np.int32)  
+
+    # Logits from tensor to numpy
+    pre_prob = y_pre.cpu().detach().numpy().astype(np.float32)
+    
+    # ------ One-hot-endcode predicted labels ------
 
     pre_binary = np.zeros(pre_prob.shape, dtype=np.int32)
-    
+
     # Find the index of the maximum value within the logits
     likeliest_dx = np.argmax(pre_prob, axis=1)
 
@@ -40,60 +79,26 @@ def cal_multilabel_metrics(y_true, y_pre, labels, threshold=0.5):
     pre_binary = pre_binary + other_dx
     pre_binary[pre_binary > 1.1] = 1
     pre_binary = np.squeeze(pre_binary) 
-    
-    # ---------------- Wanted metrics ----------------
 
-    # -- Average precision score
-    macro_avg_prec = average_precision_score(true_labels, pre_prob, average = 'macro')
-    micro_avg_prec = average_precision_score(true_labels, pre_prob, average = 'micro')
+    if drop_missing:
+        
+         # ------ Check the positive class labels ------
     
-    # -- AUROC score
-    micro_auroc = roc_auc_score(true_labels, pre_prob, average = 'micro')
-    macro_auroc = roc_auc_score(true_labels, pre_prob, average = 'macro')
-    
-    # -- PhysioNet Challenge 2021 score
-    challenge_metric = physionet_challenge_score(true_labels, pre_binary, cls_labels)
+        # Find all the columnwise indexes where there's no positive class
+        null_idx = np.argwhere(np.all(true_labels[..., :] == 0, axis=0))
 
-    return macro_avg_prec, micro_avg_prec, macro_auroc, micro_auroc, challenge_metric
+        # Drop the all-zero columns from actual labels, logits,
+        # binary predictions and class labels used in the classification
+        if any(null_idx):
+            true_labels = np.delete(true_labels, null_idx, axis=1)
+            pre_prob = np.delete(pre_prob, null_idx, axis=1)
+            pre_binary = np.delete(pre_binary, null_idx, axis=1)
+            labels = np.delete(labels, null_idx)
 
+    # There should be as many actual labels and logits as there are labels left
+    assert true_labels.shape[1] == pre_prob.shape[1] == pre_binary.shape[1] == len(labels)
     
-def preprocess_labels(y_true, y_pre, labels):
-    ''' Convert tensor variables to numpy and check the positive
-    class labels. If there's none, leave the columns out from
-    actual labels, probability estimates and class labels used
-    in the classification.
-    
-    :param y_true: Actual class labels
-    :type y_true: torch.Tensor
-    :param y_pre: Probability estimates of predicted labels
-    :type y_pre: torch.Tensor
-    
-    :return true_labels, pred_prob: Converted and possibly filtered
-                                    actual labels and probability estimates
-    :rtype: numpy.ndarray, numpy.ndarray
-    '''
-    
-    # Actual labels from tensor to numpy
-    true_labels = y_true.cpu().detach().numpy().astype(np.int32)   
-
-    # Probability estimates from tensor to numpy
-    pre_prob = y_pre.cpu().detach().numpy().astype(np.float32)
-    
-    # Find all the columnwise indexes where's there's no positive class
-    null_idx = np.argwhere(np.all(true_labels[..., :] == 0, axis=0))
-
-    # Drop the all-zero columns from actual labels, class labels 
-    # used in the classification and probability estimates of predictions
-    if any(null_idx):
-        true_labels = np.delete(true_labels, null_idx, axis=1)
-        pre_prob = np.delete(pre_prob, null_idx, axis=1)
-        labels = np.delete(labels, null_idx)
-
-    # There should be as many actual labels and probability estimates
-    # as there are labels left
-    assert true_labels.shape[1] == pre_prob.shape[1] == len(labels)
-    
-    return true_labels, pre_prob, labels
+    return true_labels, pre_prob, pre_binary, labels
 
 
 def physionet_challenge_score(y_true, y_pre, labels):
@@ -113,40 +118,59 @@ def physionet_challenge_score(y_true, y_pre, labels):
     :rtype: float
     '''    
     
-    # Identify the weights and the SNOMED CT code for the sinus rhythm class 
-    weights_file = os.path.join(os.getcwd(), 'data', 'physionet2021_weights.csv')
-    sinus_rhythm = '426783006' 
-    
-    # -------- Load the scored classes and the weights for the Challenge metric --------
+
+   # -------- Load the Physionet Challenge scored classes --------
+
+    equivalent_classes = ['59118001', '63593006', '17338001', '164909002']
+    labels_file = os.path.join(os.getcwd(), 'data', 'scored_diagnoses_2021.csv')
+    label_df = pd.read_csv(labels_file)
+
+    # Remove equivalent classes (the ones from PhysioNet Challenge 2021)
+    classes = sorted(list(set([str(name) for name in label_df['SNOMEDCTCode']]) - set(equivalent_classes)))
+    num_classes = len(classes)
+
+    # -------- Load the Physionet Challenge weights --------
     
     # Load the csv file of the weights
+    weights_file = os.path.join(os.getcwd(), 'data', 'physionet2021_weights.csv')
     weights_df = pd.read_csv(weights_file, index_col=0)
-    indexes = sum([row.split('|') for row in weights_df.index], [])
-    columns = sum([row.split('|') for row in weights_df.columns], [])
+    indeces = list(np.ravel(weights_df.index))
+    columns = list(np.ravel(weights_df.columns))
 
-    # Indexes and columns should have the same values in the weight file as it's an NxN matrix
-    assert indexes == columns, 'Columns and indexes in the weight file don´t match'
-   
-    # They should be similar so let's take the class labels from one
-    # Also, remove equivalent classes (the ones are from PhysioNet Challenge 2021)
-    equivalent_classes = ['59118001', '63593006', '17338001', '164909002']
-    classes = sorted(list(set(indexes) - set(equivalent_classes)))
+    assert indeces == columns, 'Columns and indexes in the weight file don´t match'
+    assert len(indeces) > 1, 'The weight dataframe is empty!'
+    assert len(columns) > 1, 'The weight dataframe is empty!'
 
-    # Get weights out of the weight file
-    physionet_weights = weights_df.values 
-    
+    # Assign the entries of the weight matrix with indeces and columns corresponding to the classes
+    weights = np.zeros((num_classes, num_classes), dtype=np.float64)
+    for i, a in enumerate(indeces):
+        if a in classes:
+            k = classes.index(a)
+            for j, b in enumerate(indeces):
+                if b in classes:
+                    l = classes.index(b)
+                    weights[k, l] = weights_df.values[i, j]
+
     # ------------- Reshape actual and predicted labels -------------
 
-    num_classes = len(classes)
+    # We need the arrays of actual and perdicted labels to be in the shape of 
+    # <num of recording> X <num of scored labels in Physionet Challenge 2021>
+
     true_labels = np.zeros((len(y_true), num_classes), dtype=np.bool_)
     binary_outputs = np.zeros((len(y_pre), num_classes), dtype=np.bool_)
-    for i, dx in enumerate(labels):
-        class_index = classes.index(dx)
-        true_labels[:, class_index] = y_true[:, i]
-        binary_outputs[:, class_index] = y_pre[:, i]
+    
+    # Iterate over classification labels and if one has been scored, store 
+    # the corresponding actual label and logit
+    for i, l in enumerate(labels):
+        if l in classes:
+            class_index = classes.index(l)
+            true_labels[:, class_index] = y_true[:, i]
+            binary_outputs[:, class_index] = y_pre[:, i]
 
     # ------------- Challenge metric -------------
-    challenge_metric = compute_challenge_metric(physionet_weights,
+
+    sinus_rhythm = '426783006'
+    challenge_metric = compute_challenge_metric(weights,
                                                 true_labels,
                                                 binary_outputs,
                                                 classes,
@@ -239,7 +263,7 @@ def roc_curves(y_true, y_pre, labels, epoch=None, save_path='./experiments/'):
     
     :param y_true: Actual labels
     :type y_true: torch.Tensor
-    :param y_pred: Probability estimates of predicted labels
+    :param y_pred: Logits of predicted labels
     :type y_pred: torch.Tensor
     :param labels: Class labels used in the classification as SNOMED CT Codes
     :type labels: list
@@ -247,8 +271,8 @@ def roc_curves(y_true, y_pre, labels, epoch=None, save_path='./experiments/'):
     :type epoch: int
     '''
 
-    # Convert tensors to numpy and filter out classes
-    true_labels, pre_prob, cls_labels = preprocess_labels(y_true, y_pre, labels)
+    # Convert tensors to numpy and filter out empty classes
+    true_labels, pre_prob, _, cls_labels = preprocess_labels(y_true, y_pre, labels, drop_missing=True)
     
     fpr, tpr, roc_auc = dict(), dict(), dict()
     # AUROC, fpr and tpr for each label
@@ -301,3 +325,12 @@ def roc_curves(y_true, y_pre, labels, epoch=None, save_path='./experiments/'):
     
     plt.savefig(save_path + '/' + name, bbox_inches = "tight")
     plt.close(fig) 
+
+
+if __name__ == '__main__':
+
+    y_actual = torch.Tensor([[0, 0, 1, 1], [0, 1, 0, 0], [1, 0, 1, 0]])
+    y_prob = torch.Tensor([[0.9, 0.8, 0.56, 0.8], [0.9, 0.8, 0.8, 0.6], [0.9, 0.7, 0.56, 0.8]])
+    labels = ['164889003', '164890007', '6374002', '733534002']
+
+    cal_multilabel_metrics(y_actual, y_prob, labels, threshold=0.5)
