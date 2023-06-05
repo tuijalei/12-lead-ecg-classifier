@@ -1,6 +1,6 @@
 import os, sys, re, h5py, shutil
 import pandas as pd
-from src.dataloader.transforms import Linear_interpolation, BandPassFilter
+from src.dataloader.transforms import *
 from src.dataloader.dataset_utils import load_data
 from scipy.io import savemat
 
@@ -12,7 +12,7 @@ You can add your own transforms inside the "PREPROCESS TRANSFORMS" block.
 By default the following transforms are used:
     - BandPassFilter: filters out certain frequencies that lie within a particular band or 
                       range of frequencies
-    - Linear_interpolation : resamples the ECG using linear interpolation
+    - Spline_interpolation: resamples the ECG using cubic spline interpolation
                       
 The following attributes should be considered: 
     from_directory      Where to load the original (not preprocessed) data from
@@ -82,8 +82,9 @@ for d, filenames in files.items():
         new_csv = meta_df.copy()
         new_names = []
         for name in ecg_files:
-            prev_name, _ = os.path.splitext(os.path.basename(name))
-            new_names.append(prev_name + '_preprocessed')
+            prev_name = os.path.basename(name)
+            if prev_name in new_csv['ECG_ID'].tolist():
+                new_names.append(prev_name + '_preprocessed')
 
         new_csv['ECG_ID'] = new_names
         new_csv.to_csv(os.path.join(new_path, os.path.basename(meta_files[0])), index=None, sep=',')
@@ -101,9 +102,11 @@ for d, filenames in files.items():
         else:
             # Double check that we have the metadata of the spesific ECG samples
             # i.e. it needs to be found in the ECG_ID column
-            assert re.search('^\w+', os.path.basename(ecg_name))[0] in meta_df['ECG_ID'].values, 'The name of the ECG recording not found in metadata!'
-            row_idx = meta_df.index[meta_df['ECG_ID'] == re.search('^\w+', os.path.basename(ecg_name))[0]]
-            ecg_fs = int(meta_df.loc[row_idx, 'fs'])
+            if os.path.basename(ecg_name) in meta_df['ECG_ID'].tolist():
+                row_idx = meta_df.index[meta_df['ECG_ID'] == os.path.basename(ecg_name)]
+                ecg_fs = int(meta_df.loc[row_idx, 'fs'])
+            else: # If ECG not found from metadata, skip it
+                continue
 
         # Load ECG
         ecg = load_data(ecg_name)
@@ -114,11 +117,11 @@ for d, filenames in files.items():
         # - BandPass filter 
         bpf = BandPassFilter(fs = ecg_fs)
         ecg = bpf(ecg)
-        
-        # - Linear interpolation
-        linear_interp = Linear_interpolation(fs_new = 250, fs_old = ecg_fs)
-        ecg = linear_interp(ecg)
 
+        # - Spline interpolation
+        si = Spline_interpolation(fs_new = 250, fs_old = ecg_fs)
+        ecg = si(ecg)
+        
         # ------------------------------
         # ------------------------------
 
