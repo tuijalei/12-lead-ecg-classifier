@@ -77,18 +77,6 @@ for d, filenames in files.items():
         assert len(meta_files) == 1, 'There should be only one csv file found from which metadata is read!'
         meta_df = pd.read_csv(meta_files[0])
 
-        # Create also a new copy to the new directory to which the preprocessed ECGs are saved
-        # Note, the names needs to be updated in the ECG_ID column
-        new_csv = meta_df.copy()
-        new_names = []
-        for name in ecg_files:
-            prev_name = os.path.basename(name)
-            if prev_name in new_csv['ECG_ID'].tolist():
-                new_names.append(prev_name + '_preprocessed')
-
-        new_csv['ECG_ID'] = new_names
-        new_csv.to_csv(os.path.join(new_path, os.path.basename(meta_files[0])), index=None, sep=',')
-
     print('Preprocessing {} ECGs...'.format(len(ecg_files)))
     # Iterate over ecg recordings and preprocess them
     for i, ecg_name in enumerate(ecg_files):
@@ -97,8 +85,12 @@ for d, filenames in files.items():
         if meta_files[0].endswith('.hea'):
             # Doublecheck the naming of hea and mat files as they should match
             assert re.search('^\w+', os.path.basename(ecg_name))[0] == re.search('^\w+', os.path.basename(meta_files[i]))[0], 'Hea and mat files should have similar names!'
+
             with open(meta_files[i], 'r') as f:
-                ecg_fs = int(f.readlines()[0].split(' ')[2])
+                hea_file_lines = f.readlines()
+
+            ecg_fs = int(hea_file_lines[0].split(' ')[2])
+
         else:
             # Double check that we have the metadata of the spesific ECG samples
             # i.e. it needs to be found in the ECG_ID column
@@ -113,13 +105,14 @@ for d, filenames in files.items():
 
         # ------------------------------
         # --- PREPROCESS TRANSFORMS ----
-
+        new_fs = 250
+        
         # - BandPass filter 
         bpf = BandPassFilter(fs = ecg_fs)
         ecg = bpf(ecg)
-
+        
         # - Spline interpolation
-        si = Spline_interpolation(fs_new = 250, fs_old = ecg_fs)
+        si = Spline_interpolation(fs_new = new_fs, fs_old = ecg_fs)
         ecg = si(ecg)
         
         # ------------------------------
@@ -144,6 +137,17 @@ for d, filenames in files.items():
             assert re.search('\D+\d+', os.path.basename(meta_files[i]))[0] == re.search('\D+\d+', os.path.basename(new_hea))[0], 'Hea files should have similar names except `_preprocessed` part!'
             shutil.copy(meta_files[i], new_hea)
 
+            # Update also the hea file
+            # First, replace the previous fs with the new one
+            splitted_line = hea_file_lines[0].split(' ')
+            splitted_line[2] = str(new_fs)
+            new_line = ' '.join(splitted_line)
+            hea_file_lines[0] = new_line
+
+            # Rewrite the hea file with new sample frequency
+            with open(new_hea, 'w') as f:
+                f.write(''.join(hea_file_lines))
+
         else:
             # H5 files had a key named ´ecg´ to where to store the preprocessed ECG
             with h5py.File(new_name, 'w') as f:
@@ -153,5 +157,24 @@ for d, filenames in files.items():
             print('{:^8}/{:^8} ECGs preprocessed'.format(i+1, len(ecg_files)))
     
     print('-'*20)
+
+    # Lastly, update the csv file of the metadata
+    # Note, the names needs to be updated in the ECG_ID column
+    #       and the sample frequency in the fs column
+    if meta_files[0].endswith('csv'):
+        new_csv = meta_df.copy()
+        new_names = []
+
+        for name in ecg_files:
+            full_name = os.path.basename(name)
+
+            if full_name in meta_df['ECG_ID'].tolist():
+                prev_name, suffix = os.path.splitext(full_name)
+                new_names.append(prev_name + '_preprocessed' + suffix)
+
+        new_csv['ECG_ID'] = new_names
+        new_csv['fs'] = new_fs
+
+        new_csv.to_csv(os.path.join(new_path, os.path.basename(meta_files[0])), index=None, sep=',')
 
 print('Done.')
