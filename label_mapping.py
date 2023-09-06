@@ -1,7 +1,6 @@
 import os, re, sys
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.linear_model import LogisticRegression
 
 def find_headerfiles(input_dir):
@@ -110,7 +109,7 @@ def feature_matrix(data, labels):
 
     return f_matrix
 
-def label_mapping(metadata, from_code, to_code):
+def label_mapping(metadata, label_map, from_code, to_code):
     ''' The function is made to convert AHA-codes in the Shandong data set to SNOMED CT Codes. 
     The dataset by Hui et al 2022 can be found here: https://www.nature.com/articles/s41597-022-01403-5#code-availability
     
@@ -146,10 +145,17 @@ def label_mapping(metadata, from_code, to_code):
             # Gather codes
             snomed = []
             for dx in found_codes:
-                snomed.append(label_map.loc[label_map[from_code] == dx, to_code].tolist()[0])
+                snomed_tmp = label_map.loc[label_map[from_code] == dx, to_code].tolist()
+
+                # There might be multiple SNOMED CT Codes for one AHA statement
+                if len(snomed_tmp) == 1:
+                    snomed.append(snomed_tmp[0])
+                else:
+                    for s in snomed_tmp:
+                        snomed.append(s)
                 
             # If codes, convert into a string of codes and store using row index
-            if snomed:
+            if bool(snomed):
                 metadata.loc[index, to_code] = ','.join(list(map(str, set(snomed))))
 
     return metadata
@@ -180,6 +186,7 @@ if __name__ == '__main__':
 
     # ---- CSV FILE OF THE METADATA
     csv_path = os.path.join(os.getcwd(), 'data', 'smoke_data', 'SPH', 'metadata.csv')
+    csv_save_path = os.path.join(os.getcwd(), 'data', 'smoke_data', 'SPH', 'updated_metadata_SPH.csv')
 
     # ---- CSV FILE OF LABEL MAPPING
     map_path = os.path.join(os.getcwd(), 'data', 'AHA_SNOMED_mapping.csv')
@@ -198,7 +205,7 @@ if __name__ == '__main__':
               '47665007', '445118002', '39732003', '164890007', '164909002', '270492004', '251146004', '284470004']
     
     # --- Which directory to use to train the Logistic Regression model for the imputation
-    input_dir = os.path.join(os.getcwd(), 'data', 'smoke_data')
+    input_dir = os.path.join(os.getcwd(), 'data', 'physio_sph')
     
     # -------------------------------------------------------------------------------
 
@@ -211,12 +218,18 @@ if __name__ == '__main__':
     # Create an empty column to which to gather the SNOMED CT Codes
     sph_metadata[to_code] = np.nan
 
+    # Make sure the ECGs are named in the csv file as they are named in the folder 
+    # The csv file should be in the same folder as the ECGs are!
+    ecg_names = sorted([file for file in os.listdir(os.path.dirname(csv_path)) if not file.endswith('.csv')])
+    if not ecg_names == sph_metadata['ECG_ID'].tolist():
+        sph_metadata['ECG_ID'] = ecg_names
+
     # Get label mapping
     label_map = pd.read_csv(map_path, sep=',')
 
     # Found the corresponding labels from another diagnosis coding system
     print('Converting AHA codes to SNOMED CT ones...')
-    sph_metadata = label_mapping(sph_metadata, from_code, to_code)
+    sph_metadata = label_mapping(sph_metadata, label_map, from_code, to_code)
     
     # Drop the rows that doesn't contain neither SNOMED CT Code or '-1' (normal ecg label)
     sph_metadata = sph_metadata.dropna()
@@ -236,6 +249,9 @@ if __name__ == '__main__':
 
         # Convert diagnoses into one hot encoding and drop the ECGs that don't include defined SNOMED CT Codes
         physio_feature_matrix = feature_matrix(physionet_data, labels)
+
+        # Drop all rows that contain only 0 values
+        physio_feature_matrix = physio_feature_matrix.loc[~(physio_feature_matrix==0).all(axis=1)]
 
         # Labels for SR imputation are the SR labels themselves and the other labels are the features
         physio_labels = physio_feature_matrix.loc[:, sinus_rhythm].values.tolist()
@@ -271,8 +287,6 @@ if __name__ == '__main__':
                     snomeds = snomeds + ',' + str(sinus_rhythm)
                     sph_metadata.loc[index, 'SNOMEDCTCode'] = snomeds
 
-
     # Save the updated csv file
-    sph_metadata.to_csv(csv_path, index=False)
-
+    sph_metadata.to_csv(csv_save_path, index=False)
     print('Done.')

@@ -30,7 +30,7 @@ new_directory = os.path.join(os.getcwd(), 'data', 'preprocessed_smoke_data')
 if not os.path.exists(new_directory):
     os.makedirs(new_directory)
 
-print('Gather all the filenames from the given directory into a dictionary...')
+print("Gather all the filenames from the given directory into a dictionary...") 
 
 # Initialize a dictionary with keys that are directory names in the given directory
 # If given one directory that includes files itself, have only this as a key
