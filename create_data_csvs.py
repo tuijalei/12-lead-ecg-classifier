@@ -5,6 +5,9 @@ from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit, Multilabe
 from sklearn.model_selection import KFold, train_test_split
 from itertools import combinations
 
+import logging
+
+
 def lsdir(data_dir):
     '''Find the files from the given directory.
 
@@ -78,7 +81,7 @@ def diagnosis_mapping(diagnoses, CT_codes_all, metadata_dict):
 
 def read_metacsv(CT_codes_all, files, columns, metacsv):
     '''Find information of age, gender, sample frequency and diagnoses from
-    CSV files. Return the information in a list-of-dictionaries which is 
+    csv files. Return the information in a list-of-dictionaries which is 
     later concatenated to a dataframe.
 
     :param CT_codes_all: List of all the SNOMED CT codes for the 
@@ -241,7 +244,7 @@ def read_headerfiles(CT_codes_all, files, columns):
 
 def gather_metadata(files, labels, column_names):
     ''' Gather metadata of the files. Metadata can be either in header files
-    or CSV files.
+    or csv files.
 
     :param files: List-of-lists of ECG files for which the metadata is gathered
                   Each list contains files from a spesific database
@@ -279,11 +282,11 @@ def gather_metadata(files, labels, column_names):
 
 
 def dbwise_csvs(data_directory, save_directory, labels):
-    ''' Creating database-wise data splits and saving them in CSV files
+    ''' Creating database-wise data splits and saving them in csv files
 
     :param data_directory: The location of the data files
     :type data_directory: str
-    :param save_directory: The location where to save the CSVs to
+    :param save_directory: The location where to save the csvs to
     :type save_directory: str
     :param labels: Labels in the classification
     :type labels: list
@@ -315,13 +318,13 @@ def dbwise_csvs(data_directory, save_directory, labels):
         # Filling the empty dataframe
         ecg_df = gather_metadata(filenames, labels, columns_names)
         
-        # Saving database-wise splitted data into CSVs
+        # Saving database-wise splitted data into csvs
         ecg_df.to_csv(os.path.join(save_directory, '{}.csv'.format(db)), sep=',', index=False)
         
-        print('Created CSV of the database {}!'.format(db))
+        print('Created csv of the database {}!'.format(db))
         print('- Total of {} rows (excluded {} files as no wanted labels in them)'.format(len(ecg_df), len(filenames[0])-len(ecg_df)))
 
-        # We also need to combine multiple databases as one CSV file.
+        # We also need to combine multiple databases as one csv file.
         # Let's think the already made one as the final test set and all the other
         # as training data, which are divided further into training and validation sets.
         train_data = db_names[:i] + db_names[i+1:]
@@ -331,13 +334,13 @@ def dbwise_csvs(data_directory, save_directory, labels):
         for combs in combinations(train_data, len(train_data)-1):
             train_csv_name = os.path.join(save_directory, '_'.join(sorted(combs, key=str.lower)) + '.csv')
 
-            # If doesn't already exist, create the combined CSV file
+            # If doesn't already exist, create the combined csv file
             if not os.path.exists(train_csv_name):
                 filenames = [lsdir(os.path.join(data_directory, db_path)) for db_path in combs]
                 ecg_df = gather_metadata(filenames, labels, columns_names)
                 ecg_df.to_csv(train_csv_name, sep=',', index=False)
 
-                print('Combined CSV file ´{}´ created'.format(os.path.basename(train_csv_name)))
+                print('Combined csv file ´{}´ created'.format(os.path.basename(train_csv_name)))
         
         print('-'*20)
 
@@ -380,11 +383,11 @@ def cross_validation_splits(df, labels, cv_type, n_splits):
  
 
 def stratified_csvs(data_directory, save_directory, labels, train_test_splits, cv_type, cv_k):
-    ''' Creating stratified data splits and saving them in CSVs
+    ''' Creating stratified data splits and saving them in csvs
 
     :param data_directory: The location of the data files
     :type data_directory: str
-    :param save_directory: The location where to save the CSVs to
+    :param save_directory: The location where to save the csvs to
     :type save_directory: str
     :param labels: Labels in SNOMED CT Codes
     :type labels: list
@@ -392,7 +395,7 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits, c
     :type train_val_splits: dict
     '''
     
-    # Preparing the directory where to save the CSV files
+    # Preparing the directory where to save the csv files
     os.makedirs(save_directory, exist_ok=True)
         
     print('--Total of {} labels for the classification--'.format(len(labels)))
@@ -424,12 +427,22 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits, c
         if bool(test_data):
 
             # If train/test split not performed earlier, find the test files
-            if not 'test_files' in locals():
+            try:
+                test_files
+            except NameError: 
                 test_files = [lsdir(os.path.join(data_directory, db_path)) for db_path in test_data] 
-
+            
             # Gather the metadata for for the test data too
             test_set = gather_metadata(test_files, labels, column_names)
             test_set.to_csv(os.path.join(save_directory, '{}.csv'.format('test_' + split)), sep=',', index=False)
+
+            print('Testing data was from the database {}'.format(test_data))
+            print('- Length of the test_split is {}'.format(len(test_set)))
+            print('- {} rows excluded as no wanted labels in them'.format(len(test_files) - len(test_set)))
+            del test_files
+
+        if not bool(test_data):
+            print('Not test data provided')
 
         # Gather metadata from the ECGs that are included in the classification
         ecg_df = gather_metadata(train_files, labels, column_names)
@@ -442,33 +455,26 @@ def stratified_csvs(data_directory, save_directory, labels, train_test_splits, c
         n_splits = cv_k if bool(cv_k) else len(data['train'])
         train_sets, val_sets = cross_validation_splits(ecg_df, train_labels, cv_type, n_splits)
 
-        # Saving the stratified training and validation splits to CSV files
+        # Saving the stratified training and validation splits to csv files
         for i in range(len(train_sets)):
             train_sets[i].to_csv(os.path.join(save_directory, '{}.csv'.format('train_' + split + '_' + str(i+1))), sep=',', index=False)
             val_sets[i].to_csv(os.path.join(save_directory, '{}.csv'.format('val_' + split + '_' + str(i+1))), sep=',', index=False)
         
-        print('Created csv files for train-val-test split!')
         print('Training data was from the database(s) {}'.format(train_data))
         print('- Length of the first train_split is {}'.format(len(train_sets[0])))
         print('- Length of the first val_split is {}'.format(len(val_sets[0])))
         print('- {} rows excluded as no wanted labels in them'.format(len(train_files) - len(ecg_df)))
-
-        if bool(data['test']):
-            print('Testing data was from the database {}'.format(test_data))
-            print('- Length of the test_split is {}'.format(len(test_set)))
-            print('- {} rows excluded as no wanted labels in them'.format(len(test_files) - len(test_set)))
-            print('-'*20)
-        else:
-            print('No test data provided, splitted from training set.')
+        print('-'*20)
 
 
 if __name__ == '__main__':
-    ''' Script for creating CSV files which will be needed by the models 
-    to read which ECG recordings are used in training or evaluation phases.
-    Here, the labels are chosen for the classification task. 
+    ''' The scipt to create csv files for training and testing.
+    Note that with this script, you make the decision about the labels
+    which you want to use in classification.
 
-    The CSV files will have the following structure:
+    Csv files will have the following structure:
 
+    
            path       | age  | gender | 10370003 | 111975006 | 164890007 | *other diagnoses...* 
      ---------------- |------|--------| ---------|-----------|-----------|----------------------
      ./Data/A0002.mat | 49.0 | Female |     0    |     0     |      1    |     ...      
@@ -476,58 +482,66 @@ if __name__ == '__main__':
      ./Data/A0004.mat | 45.0 |  Male  |     0    |     1     |      1    |     ...   
            ...        | ...  |  ...   |   ...    |    ...    |    ...    |     ...   
     
-    Consider the following attributes:
-    -----------------------------------
-    - `stratified` (boolean): Perform either a database-wise or a stratified data split.
-    - `data_dir` (str): Specify the directory to load ECGs and header files from.
-    - `csv_dir` (str): Specify the directory where the generated CSV files will be saved.
-    - `labels` (list): Define the desired labels to include in the classification, which must be in SNOMED CT Codes.
-    - `cv_type` (str): Whether to perform ShuffleSplit or K-Fold cross validation.
-    - `cv_k` (int): If K-Fold cross validation selected, define the k value.
+    Consider the following parameters:
+    ------------------------------------------
+    
+        :param stratified: perform either a database-wise or a stratified data split
+        :type stratified: boolean
+        :param data_dir: where to load the ecgs and header files from
+        :type data_dir: str
+        :param csv_dir: where to save the 
+        :type csv_dir: str
+        :param labels: wanted labels to include in classification, must be in SNOMED CT Codes
+        :type labels: list
+
+        
     '''
 
     # ----- WHICH DATA SPLIT DO YOU WANT TO USE WHEN CREATING CSV FILES?
     #    Stratified split :: stratified = True
     # Database-wise split :: stratified = False
-    stratified = False
+    stratified = True
     
     # ----- WHERE TO LOAD THE ECGS FROM - give the name of the data directory
     # Note that the root for this is the 'data' dictionary
-    data_dir = 'smoke_data'
+    data_dir = 'preprocessed_smoke_data'
     
     # ----- WHERE TO SAVE THE CSV FILES - give a name for the new directory
     # Note that the root for this is the 'data/split_csv/' directory
-    csv_dir = 'smoke_dbwise'
+    csv_dir = '5-Fold_CVs'
 
     # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 
-    # Note that we also need labels which are merged to another labels
-    # E.g. both 1st degree AV block and prolonged PR interval need to be listed,
-    #      if prolonged PR intervals are merged into 1st degree AV block
-    labels = ['426783006', '426177001', '427084000', '164890007', '164889003', '427393009', '164947007', '270492004']
+    # Note that we also need labels which we will merge to another labels
+    labels = ['426783006', '426177001', '164934002', '427393009', '713426002', '427084000', '59118001', '164889003', '59931005', \
+              '47665007', '445118002', '39732003', '164890007', '164909002', '270492004', '164947007', '251146004', '284470004']
 
     # ----- WHAT KIND OF CROSS VALIDATION WANTED: K-FOLD OR SHUFFLESPLIT?
     #       K-Fold :: cv_type = 'kfold' // remember to give the k value (default is 5)
     # ShuffleSplit :: cv_type = 'shufflesplit'
-    cv_type = 'shufflesplit'
+    cv_type = 'kfold'
     cv_k = 5 if cv_type == 'kfold' else None
    
     # -----------------------------------------------------------------------
     # ----- STRATIFIED DATA SPLIT
     if stratified:
         
-         # Data directory from where to read data for CSVs
+         # Data directory from where to read data for csvs
         data_dir =  os.path.join(os.getcwd(), 'data', data_dir)
         
-        # Directory to save created CSV files
+        # Directory to save created csv files
         csv_dir =  os.path.join(os.getcwd(), 'data', 'split_csvs', csv_dir)
 
         # Splits to divide the data into when making a stratified split
         # The other splits are represented later in comments
         train_test_splits = {
             'split_1': {    
-                'train': ['G12EC', 'SPH', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
-                'test': ['CPSC_CPSC-Extra']
-            }
+                    'train': ['G12EC', 'SPH', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
+                    'test': ['CPSC_CPSC-Extra']
+                },
+            'split_2': {    
+                    'train': ['G12EC', 'SPH', 'PTB_PTBXL', 'CPSC_CPSC-Extra'],
+                    'test': ['ChapmanShaoxing_Ningbo']
+                }
         }
 
         # Perform stratified data split
@@ -536,10 +550,10 @@ if __name__ == '__main__':
     # ----- DATABASE-WISE DATA SPLIT
     else:
         
-        # Data directory from where to read data for CSVs
+        # Data directory from where to read data for csvs
         data_dir =  os.path.join(os.getcwd(), 'data', data_dir)
         
-        # Directory to save created CSV files
+        # Directory to save created csv files
         csv_dir =  os.path.join(os.getcwd(), 'data', 'split_csvs', csv_dir)
 
         # Perform database-wise data split
@@ -554,22 +568,22 @@ if __name__ == '__main__':
     # ----------------------------------------
     #'split_1': {    
     #        'train': ['G12EC', 'SPH', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
-    #        'test': ['CPSC_CPSC-Extra']
+    #        'test': 'CPSC_CPSC-Extra'
     #    },
     # 'split_2': {    
     #        'train': ['G12EC', 'SPH', 'PTB_PTBXL', 'CPSC_CPSC-Extra'],
-    #        'test': ['ChapmanShaoxing_Ningbo']
+    #        'test': 'ChapmanShaoxing_Ningbo'
     #    },
     # 'split_3': {    
     #        'train': ['G12EC', 'SPH', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-    #        'test': ['PTB_PTBXL']
+    #        'test': 'PTB_PTBXL'
     #    },
     # 'split_4': {    
     #        'train': ['G12EC', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-    #        'test': ['SPH']
+    #        'test': 'SPH'
     #    },
     # 'split_5': {    
     #        'train': ['SPH', 'PTB_PTBXL', 'CPSC_CPSC-Extra', 'ChapmanShaoxing_Ningbo'],
-    #        'test': ['G12EC']
+    #        'test': 'G12EC'
     #    },
     # ----------------------------------------
