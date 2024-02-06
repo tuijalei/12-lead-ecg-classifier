@@ -1,9 +1,9 @@
-# INITIAL SETTINGS
 test_file: test_split_1.csv
-model: train_smoke.pth
-
-# TESTING SETTINGS
-threshold: 0.500000
-
-# DEVICE CONFIGS
+model: split_1_1.pth
+csv_path: stratified_smoke
+feature_path: smoke_features
 device_count: 1
+threshold: 0.5
+bandwidth: [3, 45]
+window: 7500
+nb_windows: 5

@@ -1,9 +1,0 @@
-# INITIAL SETTINGS
-test_file: test_split_1.csv
-model: split_1_1.pth
-
-# TESTING SETTINGS
-threshold: 0.500000
-
-# DEVICE CONFIGS
-device_count: 1

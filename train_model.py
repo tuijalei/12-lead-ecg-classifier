@@ -1,11 +1,12 @@
 import torch
 import numpy as np
-import random, sys, os
+import random, sys, os, re
 import pandas as pd
 from utils import load_yaml
 from src.modeling.train_utils import Training
+import logging 
 
-def read_yaml(file, csv_root, model_save_dir='', multiple=False):
+def read_yaml(file, model_save_dir='', multiple=False):
     ''' Read a yaml file and perform training.
     
     :param file: Absolute path for the yaml file wanted to read
@@ -23,6 +24,8 @@ def read_yaml(file, csv_root, model_save_dir='', multiple=False):
     args = load_yaml(file)
 
     # Update paths
+    feature_root = os.path.join(os.getcwd(), 'data', 'features', args.feature_path)
+    csv_root = os.path.join(os.getcwd(), 'data', 'split_csvs', args.csv_path)
     args.train_path = os.path.join(csv_root, args.train_file)
     args.val_path = os.path.join(csv_root, args.val_file)
     args.yaml_file_name = os.path.splitext(file)[0]
@@ -39,6 +42,31 @@ def read_yaml(file, csv_root, model_save_dir='', multiple=False):
     # The class labels start from the 4th index (exclude path, age, gender and fs)
     args.labels = pd.read_csv(args.train_path, nrows=0).columns.tolist()[4:]
 
+    # ================================ #
+    # ===== HANDCRAFTED FEATURES ===== #
+    # ================================ #
+    # Natarajan et al. computed over 300 features from lead II which they included to their deep transformer neural network.
+    # Importances of the features by RandomForest are stored in the file `features_by_importance.npy`.
+    # Only TOP20 features were used => let's extract the names and the computed features.
+    n_features = 20 # How many top features
+
+    # First, find the names of all the features (also exclude useless names from the list)
+    feature_names = list(np.load(os.path.join('data', 'features_by_importance.npy')))
+    feature_names.remove('full_waveform_duration')
+    feature_names.remove('Age')
+    feature_names.remove('Gender_Male')
+
+    # Only include TOP<n_features> features
+    feature_names = feature_names[:n_features]
+    feature_names.append('file_name')
+
+    # Then, load and concat the TOP<n_features> features into one dataframes from all the datasets
+    args.all_features = pd.concat([pd.read_csv(os.path.join(feature_root, df), usecols=feature_names) for df in os.listdir(feature_root) if df.endswith('csv')]).reset_index(drop=True)
+    new_names = [os.path.basename(name) for name in args.all_features.file_name]
+    args.all_features.file_name = new_names # Cut only the file names from the full paths
+    # ================================ #
+    # ================================ #
+
     # Directory for training information
     if not os.path.exists(args.model_save_dir):
         os.makedirs(args.model_save_dir)
@@ -47,18 +75,31 @@ def read_yaml(file, csv_root, model_save_dir='', multiple=False):
     if not os.path.exists(args.roc_save_dir):
         os.makedirs(args.roc_save_dir)
     
-    print('Arguments:\n' + '-'*10)
+    # For logging purposes
+    logs_path = os.path.join(args.model_save_dir, args.yaml_file_name + '_train.log')
+    logging.basicConfig(filename=logs_path, 
+                        format='%(asctime)s %(message)s', 
+                        filemode='w',
+                        datefmt='%Y-%m-%d %H:%M:%S') 
+    args.logger = logging.getLogger(__name__) 
+    args.logger.setLevel(logging.DEBUG) 
+    
+    args.logger.info('Arguments:')
+    args.logger.info('-'*10)
     for k, v in args.__dict__.items():
-        print(k + ':', v)
-    print('-'*10)  
+        if 'features' in k:
+            args.logger.info('{}: {}'.format(k, v.columns.tolist()))
+        else:
+            args.logger.info('{}: {}'.format(k, v))
+    args.logger.info('-'*10)  
 
-    print('Training a model...')
+    args.logger.info('Training a model...')
     trainer = Training(args)
     trainer.setup()
     trainer.train() 
     
 
-def read_multiple_yamls(path, csv_root):
+def read_multiple_yamls(path):
     ''' Read multiple yaml files from the given directory
     
     :param directory: Absolute path for the directory
@@ -73,7 +114,7 @@ def read_multiple_yamls(path, csv_root):
     
     # Reading the yaml files and training models for each
     for file in yaml_files:
-        read_yaml(file, csv_root, model_save_dir, True)
+        read_yaml(file, model_save_dir, True)
 
 
 if __name__ == '__main__':
@@ -88,13 +129,6 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     
-    # ----- Set the path here! -----
-    
-    # Root where the needed CSV file exists
-    csv_root = os.path.join(os.getcwd(), 'data', 'split_csvs', 'stratified_smoke')
-    
-    # ------------------------------
-
     # Load args
     given_arg = sys.argv[1]
     print('Loading arguments from', given_arg)
@@ -106,10 +140,10 @@ if __name__ == '__main__':
 
         if 'yaml' in given_arg:
             # Run one yaml
-            read_yaml(arg_path, csv_root)
+            read_yaml(arg_path)
         else:
             # Run multiple yamls from a directory
-            read_multiple_yamls(arg_path, csv_root)
+            read_multiple_yamls(arg_path)
             
     else:
         raise Exception('No such file nor directory exists! Check the arguments.')
