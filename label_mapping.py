@@ -173,14 +173,14 @@ if __name__ == '__main__':
 
     The header files and csv file are the two supported types for metadata. The metadata files needs to be in the same directory
     where the ECG data exists. If another csv file is stored, make sure to keep only one csv file in the data directory so that 
-    the script creating csv files of data splits knows where to load the codes from. I.e., delete or move the ones that are not needed.
+    the script creating csv files of data splits knows. This script moves the previous metadata file to the parent directory.
 
     Note also that the columns should be similarly named in the metadata file and the mapping file. E.g. To find the AHA codes 
     used in the SPH data, the "AHA_Code" named column is looked for, and the similarly named column from the mapping file
     is looked for to convert those AHA codes to SNOMED CT Codes.
 
     The script can also perform imputation of the sinus rhythm label to the new data if it's missing. Sinus rhythm label is used
-    by the Physionet Challenge 2021 score, so if the metric is wanted to be computed, the imputation should be considered.
+    to compute the Physionet Challenge 2021 score, so if the metric is wanted to be computed, the imputation should be considered.
 
     '''
 
@@ -289,5 +289,10 @@ if __name__ == '__main__':
 
     # Save the updated csv file
     sph_metadata.to_csv(csv_save_path, index=False)
+
+    # Move the previous csv file from the folder to the parent directory as there can be only one csv file
+    prev_metadata_file = os.path.basename(csv_path)
+    parent_dir = os.path.dirname(os.path.dirname(csv_path))
+    os.rename(csv_path, os.path.join(parent_dir, prev_metadata_file))
 
     print('Done.')
