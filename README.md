@@ -34,7 +34,7 @@ You can find YAML configurations in the `configs` directory:
 * YAML files in the `training` directory are used for training a model
 * YAML files in the `predicting` directory are used for testing and evaluating a model.
 
-Two notebooks are available for creating training and testing YAML files based on the data splitting performed with the `create_data_csvs.py` script: [Yaml files of database-wise split for training and testing](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of stratified split for training and testing](/notebooks/2_physionet_stratified_yaml_files.ipynb). Be sure to perform the data splitting first.
+Two notebooks are available for creating training and testing YAML files based on the data splitting performed with the `create_data_csvs.py` script: [Yaml files of database-wise split for training and testing](/notebooks/2_physionet_DBwise_yaml_files.ipynb) and [Yaml files of stratified split for training and testing](/notebooks/2_physionet_stratified_yaml_files.ipynb). In addition, the `create_yaml_files.py` script is another option to create the YAML files. Be sure to perform the data splitting first.
 
 1) To split the data for model training and testing, run the following command:
 
@@ -113,8 +113,9 @@ python run_model.py predict_stratified_smoke
 ├── LICENSE
 ├── LICENSE.txt
 ├── __init__.py
-├── create_data_csvs.py          # Script to perform database-wise data split or split by
-│                                  the cross-validatior ´Multilabel Stratified ShuffleSplit´ 
+├── create_data_csvs.py          # Script to perform either database-wise data split or
+│                                  split by stratified K-fold or ShuffleSplit
+├── create_yaml_files.py         # Script to create YAML files for configurations
 ├── preprocess_data.py           # Script for preprocessing data
 ├── README.md
 ├── requirements.txt             # The requirements needed to run the repository
