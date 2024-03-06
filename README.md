@@ -109,18 +109,19 @@ python run_model.py predict_stratified_smoke
 │                                  and the training loop
 │
 ├── .gitignore
-├── label_mapping.py             # Script to convert other diagnostic codes to SNOMED CT Codes
 ├── LICENSE
 ├── LICENSE.txt
+├── README.md
 ├── __init__.py
 ├── create_data_csvs.py          # Script to perform either database-wise data split or
 │                                  split by stratified K-fold or ShuffleSplit
 ├── create_yaml_files.py         # Script to create YAML files for configurations
+├── label_mapping.py             # Script to convert other diagnostic codes to SNOMED CT Codes
 ├── preprocess_data.py           # Script for preprocessing data
 ├── README.md
 ├── requirements.txt             # The requirements needed to run the repository
-├── run_model.py                # Script to test and evaluate a trained model
+├── run_model.py                 # Script to test and evaluate a trained model
 ├── train_model.py               # Script to train a model
-└── utils.py                     # Script for yaml configuration
+└── utils.py                     # Script for YAML configuration
 
 ```
