@@ -57,10 +57,10 @@ def merge_labels(df):
     # How many of these have both diagnosis?
     both_idx = [i for i, row in df.loc[pr_idx, :].iterrows() if first_degree_hb_snomed in list(map(str, row['SNOMEDCTCode']))]
 
-    # Find patients that lack wanted diagnosis
+    # Find patients that lack the wanted diagnosis
     merge_idx = [dx for dx in pr_idx if not dx in both_idx]
 
-    # Append "1st degree heart block" to the patients that doesn't have it yet
+    # Add "1st degree heart block" to patients that don't have it yet
     for dx in df.loc[merge_idx, 'SNOMEDCTCode']:
         dx.append(str(first_degree_hb_snomed))
 
@@ -205,7 +205,7 @@ if __name__ == '__main__':
               '47665007', '445118002', '39732003', '164890007', '164909002', '270492004', '251146004', '284470004']
     
     # --- Which directory to use to train the Logistic Regression model for the imputation
-    input_dir = os.path.join(os.getcwd(), 'data', 'physio_sph')
+    input_dir = os.path.join(os.getcwd(), 'data', 'smoke_data')
     
     # -------------------------------------------------------------------------------
 
@@ -289,4 +289,5 @@ if __name__ == '__main__':
 
     # Save the updated csv file
     sph_metadata.to_csv(csv_save_path, index=False)
+
     print('Done.')

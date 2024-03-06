@@ -56,9 +56,9 @@ def diagnosis_mapping(diagnoses, CT_codes_all, metadata_dict):
 
         # There might be situation where we want to merge some labels into one "parent" label,
         # e.g. all "prolonged pr interval" will be merged to "1st degree heart block" (Physionet mapping)
-        prolonged_pr_snomed = '164947007'
         first_degree_hb_snomed = '270492004'
-
+        prolonged_pr_snomed = '164947007'
+        
         if str(code) == prolonged_pr_snomed:
             if code in CT_codes_all:
                 metadata_dict[first_degree_hb_snomed] = 1
@@ -70,6 +70,9 @@ def diagnosis_mapping(diagnoses, CT_codes_all, metadata_dict):
         # Map found codes with the value of 1
         if code in CT_codes_all:
             metadata_dict[code] = 1
+
+    # No need to store the keys for merged labels
+    metadata_dict.pop(prolonged_pr_snomed)
 
     # Add zero to all other diagnoses
     for key in metadata_dict.keys():
@@ -124,12 +127,12 @@ def read_metacsv(CT_codes_all, files, columns, metacsv):
 
                 # Gather all information to a dictionary
                 metadata_dict = {key: None for key in columns}
-                
-                # Map the diagnosis labels
-                metadata_dict = diagnosis_mapping(dx, CT_codes_all, metadata_dict)
 
                 # Add a path of the file
                 metadata_dict['path'] = file
+                
+                # Map the diagnosis labels
+                metadata_dict = diagnosis_mapping(dx, CT_codes_all, metadata_dict)
 
                 # Find the sample frequency
                 fs = metacsv_df.loc[row_idx, 'fs']
@@ -206,6 +209,9 @@ def read_headerfiles(CT_codes_all, files, columns):
                 # Gather all information to a dictionary
                 metadata_dict = {key: None for key in columns}
 
+                # Add a path of the file
+                metadata_dict['path'] = file
+
                 # Map the diagnosis labels
                 metadata_dict = diagnosis_mapping(dx, CT_codes_all, metadata_dict)
  
@@ -213,9 +219,6 @@ def read_headerfiles(CT_codes_all, files, columns):
                 f.seek(0)
 
                 for i, lines in enumerate(f):
-
-                    # Add a path of the file
-                    metadata_dict['path'] = file
 
                     # Find the sample frequency
                     if i == 0:
@@ -508,7 +511,7 @@ if __name__ == '__main__':
     
     # ----- WHERE TO SAVE THE CSV FILES - give a name for the new directory
     # Note that the root for this is the 'data/split_csv/' directory
-    csv_dir = '5-Fold_CVs'
+    csv_dir = 'stratified_smoke'
 
     # ----- LABELS TO USE IN SNOMED CT CODES: THESE ARE USED FOR CLASSIFICATION 
     # Note that we also need labels which we will merge to another labels
@@ -537,10 +540,6 @@ if __name__ == '__main__':
             'split_1': {    
                     'train': ['G12EC', 'SPH', 'PTB_PTBXL', 'ChapmanShaoxing_Ningbo'],
                     'test': ['CPSC_CPSC-Extra']
-                },
-            'split_2': {    
-                    'train': ['G12EC', 'SPH', 'PTB_PTBXL', 'CPSC_CPSC-Extra'],
-                    'test': ['ChapmanShaoxing_Ningbo']
                 }
         }
 
