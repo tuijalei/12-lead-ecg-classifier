@@ -22,11 +22,11 @@ class Predicting(object):
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
             self.device_count = self.args.device_count
-            print('using {} gpu(s)'.format(self.device_count))
+            self.args.logger.info('using {} gpu(s)'.format(self.device_count))
         else:
             self.device = torch.device("cpu")
             self.device_count = 1
-            print('using {} cpu'.format(self.device_count))
+            self.args.logger.info('using {} cpu'.format(self.device_count))
         
         # Find test files based on the test csv (for naming saved predictions)
         # The paths for these files are in the 'path' column
@@ -46,14 +46,7 @@ class Predicting(object):
         # Load the trained model
         self.model = resnet18(in_channel=channels,
                          out_channel=len(self.args.labels))
-
-        # Consider the GPU or CPU condition
-        if torch.cuda.is_available():
-            if self.device_count > 1:
-                self.model = torch.nn.DataParallel(self.model)
-                self.model.module.load_state_dict(torch.load(self.args.model_path))
-        else:
-            self.model.load_state_dict(torch.load(self.args.model_path, map_location=self.device))
+        self.model.load_state_dict(torch.load(self.args.model_path, map_location=self.device))
 
         self.sigmoid = nn.Sigmoid()
         self.sigmoid.to(self.device)
@@ -62,7 +55,7 @@ class Predicting(object):
     def predict(self):
         ''' Make predictions
         '''
-        print('predict() called: model={}, device={}'.format(
+        self.args.logger.info('predict() called: model={}, device={}'.format(
               type(self.model).__name__,
               self.device))
 
@@ -127,13 +120,12 @@ class Predicting(object):
             self.save_predictions(self.filenames[i], pred_label, scores, self.args.pred_save_dir)
 
             if i % 1000 == 0:
-                print('{:<4}/{:>4} predictions made'.format(i+1, len(self.test_dl)))
+                self.args.logger.info('{:<4}/{:>4} predictions made'.format(i+1, len(self.test_dl)))
 
         # Predicting metrics
         test_macro_avg_prec, test_micro_avg_prec, test_macro_auroc, test_micro_auroc, test_challenge_metric = cal_multilabel_metrics(labels_all, logits_prob_all, self.args.labels, self.args.threshold)
-       
         
-        print('macro avg prec: {:<6.2f} micro avg prec: {:<6.2f} macro auroc: {:<6.2f} micro auroc: {:<6.2f} challenge metric: {:<6.2f}'.format(
+        self.args.logger.info('macro avg prec: {:<6.2f} micro avg prec: {:<6.2f} macro auroc: {:<6.2f} micro auroc: {:<6.2f} challenge metric: {:<6.2f}'.format(
             test_macro_avg_prec,
             test_micro_avg_prec,
             test_macro_auroc,
@@ -160,8 +152,7 @@ class Predicting(object):
         
         end_time_sec = time.time()
         total_time_sec = end_time_sec - start_time_sec
-        print()
-        print('Time total:     %5.2f sec' % (total_time_sec))
+        self.args.logger.info('Time total:     %5.2f sec' % (total_time_sec))
 
  
     def save_predictions(self, filename, labels, scores, pred_dir):

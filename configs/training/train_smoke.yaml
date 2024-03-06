@@ -1,16 +1,11 @@
-# INITIAL SETTINGS
 train_file: train_split_1_1.csv
 val_file: val_split_1_1.csv
-
-# TRAINING SETTINGS
+csv_path: stratified_smoke
 batch_size: 10
-num_workers: 1
+num_workers: 0
 epochs: 1
 lr: 0.003000
 weight_decay: 0.000010
-
-# VALIDATION SETTINGS
-threshold: 0.5
-
-# DEVICE CONFIGS
 device_count: 1
+threshold: 0.500000
+bandwidth:
