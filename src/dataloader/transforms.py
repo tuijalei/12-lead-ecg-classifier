@@ -90,7 +90,7 @@ class Normalize(object):
     def __call__(self, mseq):
         if self.type == "0-1":
             for i, row in enumerate(mseq):
-                if sum(mseq[i, :] == 0):
+                if sum(mseq[i, :]) == 0:
                     mseq[i, :] = mseq[i, :]
                 else:
                     mseq[i,:] = (row - np.min(row)) / (np.max(row) - np.min(row))             
