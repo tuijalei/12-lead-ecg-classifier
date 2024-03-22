@@ -22,6 +22,22 @@ class Compose(object):
         for t in self.transforms:
             mseq = t(mseq)
         return mseq
+    
+class RandomClip(object):
+    def __init__(self, w=1000):
+        self.w = w
+
+    def __call__(self, mseq):
+        if mseq.shape[1] >= self.w:
+            start = random.randint(0, mseq.shape[1] - self.w)
+            mseq = mseq[:, start:start + self.w]
+        else:
+            left = random.randint(0, self.w - mseq.shape[1])
+            right = self.w - mseq.shape[1] - left
+            zeros_padding1 = np.zeros(shape=(mseq.shape[0], left))
+            zeros_padding2 = np.zeros(shape=(mseq.shape[0], right))
+            mseq = np.hstack((zeros_padding1, mseq, zeros_padding2))
+        return mseq
 
     
 class Retype(object):
@@ -64,6 +80,13 @@ class Spline_interpolation(object):
             mseq_rs[i,:] = self.spliner(ind_orig, row, ind_new)
         return mseq_rs
 
+class Round(object):
+    def __init__(self, precision=4):
+        #suggested precision=4
+        self.precision = precision
+    def __call__(self, mseq):
+        return np.round(mseq,self.precision)
+    
        
 class BandPassFilter(object):
     def __init__(self, fs, lf=0.5, hf=50, order=2):
@@ -88,52 +111,48 @@ class Normalize(object):
         self.type = type
 
     def __call__(self, mseq):
+        mseq2=np.zeros(mseq.shape)
         if self.type == "0-1":
             for i, row in enumerate(mseq):
-                if sum(mseq[i, :]) == 0:
-                    mseq[i, :] = mseq[i, :]
-                else:
-                    mseq[i,:] = (row - np.min(row)) / (np.max(row) - np.min(row))             
+                mseq2[i,:] = (row - np.min(row)) / (np.max(row) - np.min(row))             
         elif self.type == "mean-std":
             for i, row in enumerate(mseq):
-                mseq[i,:] = (row - np.mean(row)) / np.std(row)
+                mseq2[i,:] = (row - np.mean(row)) / np.std(row)
         elif self.type == "none":
-            mseq = mseq
+            mseq2 = mseq
         else:
             raise NameError('This normalization is not included!')
-        return mseq
+        return mseq2
 
 
 class AddNoise(object):
     
-    def __init__(self, sigma=0.05, p = 0.5):
-        self.sigma = sigma
+    def __init__(self,sigma=0.2,p = 0.5):
+        #suggested sigma=0.2
         self.addnoise_p = p
+        self.sigma=sigma
         
     def __call__(self, mseq):
         if self.addnoise_p < np.random.rand(1):
             return mseq
-        sigma = np.random.uniform(0,self.sigma)        
+        sigma = np.random.uniform(0,self.sigma)  
         mseq = mseq + np.random.normal(loc=0, scale=sigma, size=mseq.shape)
         return mseq
 
-    
 class Roll(object):
     
     def __init__(self, n = 250, p=0.5):
         self.n = n
         self.roll_p = p   
-        
     def __call__(self, mseq):
         if self.roll_p < np.random.rand(1):
             return mseq
         sign = np.random.choice([-1,1])
-        n = np.random.randint(0, self.n)
+        n = np.random.randint(0, self.n) #
         for i, row in enumerate(mseq):
             mseq[i,:] = np.roll(row, sign*n)
         return mseq
 
-    
 class Flipy(object):
     
     def __init__(self, p = 0.5):
@@ -145,8 +164,7 @@ class Flipy(object):
         for i, row in enumerate(mseq):
             mseq[i,:] = np.multiply(row,-1)
         return mseq
-
-
+    
 class Flipx(object):
     
     def __init__(self, p = 0.5):
@@ -157,85 +175,73 @@ class Flipx(object):
             return mseq
         return np.fliplr(mseq)
 
-    
 class MultiplySine(object):
     
-    def __init__(self, fs = 250, f = 2, a = 1, p = 0.5):
-        self.fs = 250
-        self.f = f
-        self.a = a
+    def __init__(self, fs = 250, f = 10, a = 0.2, p = 1):
+        #suggested fs = 250, f = 10, a = .2
+        self.fs = fs
         self.multiply_sine_p = p
+        self.f=f
+        self.a=a
                 
     def __call__(self, mseq):
+        mseq2=np.zeros(mseq.shape)
         if self.multiply_sine_p < np.random.rand(1):
             return mseq
         t = np.arange(mseq.shape[1])/self.fs          
         for i, row in enumerate(mseq):
             f, a = np.random.uniform(0,self.f), np.random.uniform(0,self.a)
-            mseq[i,:] = row*(1 + a*np.sin(2*np.pi*f*t))     
-        return mseq
-
+            mseq2[i,:] = row*(1 + a*np.sin(2*np.pi*f*t))     
+        return mseq2
     
 class MultiplyLinear(object):
     
-    def __init__ (self, multiplier = 5, p = 0.5):
+    def __init__ (self, multiplier=5,p = 0.5):
+        #suggested m= [1,5]
         self.multiply_linear_p = p
-        self.multiplier = multiplier
+        self.multiplier=multiplier
         
     def __call__(self, mseq):
+        mseq2=np.zeros(mseq.shape)
         if self.multiply_linear_p < np.random.rand(1):
             return mseq
         n = mseq.shape[1]
         for i, row in enumerate(mseq):            
-            m = np.random.uniform(1,self.multiplier,2)        
+            m = np.random.uniform(1,self.multiplier,2)  
             v = np.linspace(m[0],m[1],n)
-            mseq[i,:] = np.multiply(row, v) 
-        return mseq
-
+            mseq2[i,:] = np.multiply(row, v) 
+        return mseq2
     
 class MultiplyTriangle(object):
     
-    def __init__(self, scale = 2.0, p = 0.5):
+    def __init__(self, scale = 5.0, p = 0.5):
+        #suggested scale = 5.0
         self.multiply_triangle_p = p
         self.scale = scale
         
     def __call__(self, mseq):
+        mseq2=np.zeros(mseq.shape)
         if self.multiply_triangle_p < np.random.rand(1):
             return mseq
         n_samples = mseq.shape[1]
         for i, row in enumerate(mseq):
             n_turning_point = int(np.random.uniform(0,1)*n_samples)
             m = np.random.uniform(1/self.scale, self.scale)   
+            n_turning_point=mseq.shape[1]//2
             v1 = np.linspace(1,m,n_turning_point)
             v2 = np.linspace(m,1,n_samples - n_turning_point)
             v = np.concatenate([v1,v2])
-            mseq[i,:] = np.multiply(row, v) 
-        return mseq
-
-    
-class RandomClip(object):
-    def __init__(self, w=1000):
-        self.w = w
-
-    def __call__(self, mseq):
-        if mseq.shape[1] >= self.w:
-            start = random.randint(0, mseq.shape[1] - self.w)
-            mseq = mseq[:, start:start + self.w]
-        else:
-            left = random.randint(0, self.w - mseq.shape[1])
-            right = self.w - mseq.shape[1] - left
-            zeros_padding1 = np.zeros(shape=(mseq.shape[0], left))
-            zeros_padding2 = np.zeros(shape=(mseq.shape[0], right))
-            mseq = np.hstack((zeros_padding1, mseq, zeros_padding2))
-        return mseq
-
+            mseq2[i,:] = np.multiply(row, v) 
+        return mseq2
     
 class RandomStretch(object):
     def __init__(self, scale=1.5, p = 0.5):
+        #suggested scale=1.5
         self.scale = scale
         self.p = p
 
     def __call__(self, mseq):
+        mseq2=np.zeros(mseq.shape)
         if self.p < np.random.rand(1):
             return mseq
         m = np.random.uniform(1/self.scale, self.scale)
@@ -243,56 +249,34 @@ class RandomStretch(object):
         for i, row in enumerate(mseq):
             y = signal.resample(row, num)
             if len(y) < len(row):
-                mseq[i,:len(y)] = y
+                mseq2[i,:len(y)] = y
             else:
-                mseq[i,:] = y[:len(row)]
-            return mseq
-
+                mseq2[i,:] = y[:len(row)]
+            return mseq2
         
-class ResampleSine(object):
-    def __init__(self, fs = 250, freq_lo = 0.0, freq_hi = 0.3, 
-                 scale_lo = 0.0, scale_hi = 0.5, p=0.5):
-        self.fs = fs
-        self.freq_lo = freq_lo
-        self.freq_hi = freq_hi
-        self.scale_lo = scale_lo
-        self.scale_hi = scale_hi
-        self.p = p
-        
-    def __call__(self, mseq):
-        if self.p < np.random.rand(1):
-            return mseq        
-        scale = np.random.uniform(self.scale_lo, self.scale_hi) 
-        freq = np.random.uniform(self.freq_lo, self.freq_hi)
-        x_orig = np.arange(0, mseq.shape[1])/self.fs
-        x_new = x_orig + scale*np.sin(2*np.pi*freq*x_orig)
-        for i, row in enumerate(mseq):            
-            mseq[i,:] = np.interp(x_new, x_orig, row)
-        return mseq
-
-    
 class ResampleLinear(object):
-    def __init__(self, scale = 2, p=0.5):
+    def __init__(self, scale = 1.5, p=0.5):
+        #suggested scale=1.5
         self.scale = scale
         self.p = p
         
     def __call__(self, mseq):
+        mseq2=np.zeros(mseq.shape)
         if self.p < np.random.rand(1):
             return mseq    
         x_orig = np.arange(0, mseq.shape[1])
-        scale = np.random.uniform(self.scale, self.scale) 
+        scale = np.random.uniform(1/self.scale, self.scale) 
         scale = np.linspace(1,scale,len(x_orig))
         x_new = x_orig*scale
-        x_new = x_new*(x_orig[-1]/x_new[-1])
         for i, row in enumerate(mseq):            
-            mseq[i,:] = np.interp(x_new, x_orig, row)
-        return mseq
-
+            mseq2[i,:] = np.interp(x_new, x_orig, row)
+        return mseq2
     
 class NotchFilter(object):
-    def __init__(self, fs, Q = 1, p = 0.5):
+    def __init__(self, fs=250, Q = 1, p = 0.5):
+        #suggested fs=250 Q=1,2,3
         self.fs = fs
-        self.Q = Q
+        self.Q = Q # 1~3
         self.p = p
         
     def nf(self, arr, fs, f0, Q):
@@ -300,12 +284,13 @@ class NotchFilter(object):
         return signal.filtfilt(b, a, arr) 
                 
     def __call__(self, mseq):
+        mseq2=np.zeros(mseq.shape)
         if self.p < np.random.rand(1):
             return mseq  
         f0 = np.random.uniform(1, int(self.fs/2)) 
         for i, row in enumerate(mseq):
-            mseq[i,:] = self.nf(row, self.fs, f0, self.Q)
-        return mseq  
+            mseq2[i,:] = self.nf(row, self.fs, f0, self.Q)
+        return mseq2  
 
     
 class ValClip(object):

@@ -32,7 +32,7 @@ class Training(object):
             self.args.logger.info('using {} cpu'.format(self.device_count))
 
         # Load the datasets       
-        training_set = ECGDataset(self.args.train_path, get_transforms('train'))
+        training_set = ECGDataset(self.args.train_path, get_transforms('train', self.args.aug_type, self.args.precision))
         channels = training_set.channels
         self.train_dl = DataLoader(training_set,
                                    batch_size=self.args.batch_size,

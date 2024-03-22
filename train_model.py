@@ -39,10 +39,13 @@ def read_yaml(file, model_save_dir='', multiple=False):
 
     # Update paths
     args.train_path = os.path.join(csv_root, args.train_file)
-    args.val_path = os.path.join(csv_root, args.val_file)
+    args.val_path = os.path.join(csv_root, args.val_file) if args.val_file else None
     args.yaml_file_name = os.path.splitext(file)[0]
     args.yaml_file_name = os.path.basename(args.yaml_file_name)
-    
+
+    # Check precision
+    args.precision = args.precision if args.precision else None
+
     if multiple:
         args.model_save_dir = model_save_dir
         args.roc_save_dir = os.path.join(os.getcwd(),'experiments', model_save_dir, 'ROC_' + args.yaml_file_name)
