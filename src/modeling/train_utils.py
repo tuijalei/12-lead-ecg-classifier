@@ -260,28 +260,26 @@ class Training(object):
                     self.args.logger.info('- Validation logits saved')
                     logits_csv_path = os.path.join(self.args.model_save_dir,
                                                self.args.yaml_file_name + '_val_logits.csv') 
-                    # Cleanup filenames to use as indexes
-                    cleanup_filenames = [os.path.basename(file) for file in self.validation_files]
+                    labels_all_csv_path = os.path.join(self.args.model_save_dir,
+                                                self.args.yaml_file_name + '_val_labels.csv') 
+                    # Use filenames as indeces
+                    filenames = [os.path.basename(file) for file in self.validation_files]
 
                 else:
                     self.args.logger.info('- Training logits and actual labels saved (no validation set available)')
                     logits_csv_path = os.path.join(self.args.model_save_dir,
                                                self.args.yaml_file_name + '_train_logits.csv') 
-                    cleanup_filenames = None
-                    
-                    # If only training used and the logits saved from there,
-                    # save also actual labels as the DataLoader is shuffled
                     labels_all_csv_path = os.path.join(self.args.model_save_dir,
-                                               self.args.yaml_file_name + '_actual_labels.csv') 
-                    labels_numpy = labels_all.cpu().detach().numpy().astype(np.float32)
-                    labels_df = pd.DataFrame(labels_numpy, columns=self.args.labels, index=cleanup_filenames)
-                    labels_df.to_csv(labels_all_csv_path, sep=',')
-                    
+                                                self.args.yaml_file_name + '_train_labels.csv') 
+                    filenames = None
+                
+                # Save logits and corresponding labels
+                labels_numpy = labels_all.cpu().detach().numpy().astype(np.float32)
+                labels_df = pd.DataFrame(labels_numpy, columns=self.args.labels, index=filenames)
+                labels_df.to_csv(labels_all_csv_path, sep=',')
 
-                # Save the logits as a csv file where columns are the labels and 
-                # indexes are the files which have been used in the validation phase
                 logits_numpy = logits_prob_all.cpu().detach().numpy().astype(np.float32)
-                logits_df = pd.DataFrame(logits_numpy, columns=self.args.labels, index=cleanup_filenames)
+                logits_df = pd.DataFrame(logits_numpy, columns=self.args.labels, index=filenames)
                 logits_df.to_csv(logits_csv_path, sep=',')
 
         torch.cuda.empty_cache()

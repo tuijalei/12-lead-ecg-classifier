@@ -39,7 +39,7 @@ def read_yaml(file, model_save_dir='', multiple=False):
 
     # Update paths
     args.train_path = os.path.join(csv_root, args.train_file)
-    args.val_path = os.path.join(csv_root, args.val_file)
+    args.val_path = os.path.join(csv_root, args.val_file) if args.val_file else None
     args.yaml_file_name = os.path.splitext(file)[0]
     args.yaml_file_name = os.path.basename(args.yaml_file_name)
     

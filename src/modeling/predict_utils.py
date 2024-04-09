@@ -90,35 +90,6 @@ class Predicting(object):
                 labels_all = torch.cat((labels_all, labels), 0)
                 logits_prob_all = torch.cat((logits_prob_all, logits_prob), 0)
 
-           
-            # ------ One-hot-encode predicted label -----------
-            # Define an empty label for predictions
-            pred_label = np.zeros(len(self.args.labels))
-
-            # Find the maximum values within the probabilities
-            _, likeliest_dx = torch.max(logits_prob, 1)
-
-            # Predicted probabilities from tensor to numpy
-            likeliest_dx = likeliest_dx.cpu().detach().numpy()
-
-            # First, add the most likeliest diagnosis to the predicted label
-            pred_label[likeliest_dx] = 1
-
-            # Then, add all the others that are above the decision threshold
-            other_dx = logits_prob.cpu().detach().numpy() >= self.args.threshold
-            pred_label = pred_label + other_dx
-            pred_label[pred_label > 1.1] = 1
-            pred_label = np.squeeze(pred_label)
-
-            # --------------------------------------------------
-            
-            # Save also probabilities but return them first in numpy
-            scores = logits_prob.cpu().detach().numpy()
-            scores = np.squeeze(scores)
-            
-            # Save the prediction
-            self.save_predictions(self.filenames[i], pred_label, scores, self.args.pred_save_dir)
-
             if i % 1000 == 0:
                 self.args.logger.info('{:<4}/{:>4} predictions made'.format(i+1, len(self.test_dl)))
 
@@ -133,7 +104,7 @@ class Predicting(object):
             test_challenge_metric))
         
         # Draw ROC curve for predictions
-        roc_curves(labels_all, logits_prob_all, self.args.labels, save_path = self.args.output_dir)
+        roc_curves(labels_all, logits_prob_all, self.args.labels, epoch=None, save_path=self.args.roc_save_dir)
         
         # Add information to testing history
         history['test_micro_auroc'] = test_micro_auroc
@@ -147,35 +118,24 @@ class Predicting(object):
                                         self.args.yaml_file_name + '_test_history.pickle')
         with open(history_savepath, mode='wb') as file:
             pickle.dump(history, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+        # Save the labels and logits
+        filenames = [os.path.basename(file) for file in self.filenames]
+        logits_csv_path = os.path.join(self.args.output_dir,
+                                        self.args.yaml_file_name + '_test_logits.csv') 
+        labels_csv_path = os.path.join(self.args.output_dir,
+                                        self.args.yaml_file_name + '_test_labels.csv') 
+
+        logits_numpy = logits_prob_all.cpu().detach().numpy().astype(np.float32)
+        logits_df = pd.DataFrame(logits_numpy, columns=self.args.labels, index=filenames)
+        logits_df.to_csv(logits_csv_path, sep=',')
+        
+        labels_numpy = labels_all.cpu().detach().numpy().astype(np.float32)
+        labels_df = pd.DataFrame(labels_numpy, columns=self.args.labels, index=filenames)
+        labels_df.to_csv(labels_csv_path, sep=',')
             
         torch.cuda.empty_cache()
         
         end_time_sec = time.time()
         total_time_sec = end_time_sec - start_time_sec
         self.args.logger.info('Time total:     %5.2f sec' % (total_time_sec))
-
- 
-    def save_predictions(self, filename, labels, scores, pred_dir):
-        '''Save the challenge predictions in csv file with record id, 
-        diagnoses predicted and their confidence score as
-
-        #Record ID
-        164889003, 270492004, 164909002, 426783006, 59118001, 284470004,  164884008,
-        1,         1,         0,         0,         0,        0,          0,        
-        0.9,       0.6,       0.2,       0.05,      0.2,      0.35,       0.35,     
-        '''
-        
-        recording = os.path.basename(os.path.splitext(filename)[0])
-        new_file = os.path.basename(filename.replace('.mat','.csv'))
-        output_file = os.path.join(pred_dir, new_file)
-
-        # Include the filename as the recording number
-        recording_string = '#{}'.format(recording)
-        class_string = ','.join(self.args.labels)
-        label_string = ','.join(str(i) for i in labels)
-        score_string = ','.join(str(i) for i in scores)
-
-        # Write the output file
-        with open(output_file, 'w') as file:
-            file.write(recording_string + '\n' + class_string + '\n' + label_string + '\n' + score_string + '\n')
-           

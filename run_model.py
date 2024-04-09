@@ -40,13 +40,10 @@ def read_yaml(file, model_save_dir='', multiple=False):
     
     # Output directory based on if multiple yaml files are run or only one
     args.output_dir = os.path.join(os.getcwd(),'experiments', model_save_dir, args.yaml_file_name) if multiple else os.path.join(os.getcwd(),'experiments', args.yaml_file_name)
+    args.roc_save_dir = os.path.join(os.getcwd(),'experiments', args.yaml_file_name, 'ROC_curves')
     
-    # Make a subdirectory into the output directory where to save the predictions
-    args.pred_save_dir = os.path.join(args.output_dir, 'predictions')
-    
-    # Make sure the directory for predictions and other outputs exists
+    # Make sure the directory exists
     os.makedirs(args.output_dir, exist_ok=True)
-    os.makedirs(args.pred_save_dir, exist_ok=True)
 
     # Find the trained model from the ´experiments´ directory as it should be saved there
     for root, dirs, files in os.walk(os.path.join(os.getcwd(), 'experiments')):

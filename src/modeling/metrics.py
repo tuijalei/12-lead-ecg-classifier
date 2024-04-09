@@ -320,9 +320,9 @@ def roc_curves(y_true, y_pre, labels, epoch=None, save_path='./experiments/'):
     ax1.legend(loc="lower right", prop={'size': 8}); ax2.legend(loc="lower right", prop={'size': 6})
     
     fig.tight_layout()
+    
     # Saving the plot 
     name = "roc-e{}.png".format(epoch) if epoch else "roc-test.png"
-    
     plt.savefig(save_path + '/' + name, bbox_inches = "tight")
     plt.close(fig) 
 
